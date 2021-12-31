@@ -1,22 +1,23 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class SignupUserDto {
+  @IsNotEmpty()
   @IsString()
-  readonly m: string;
+  readonly name: string;
 
-  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  readonly gender: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  readonly birth: number;
+
+  @IsNotEmpty()
   @IsString()
   readonly e_mail: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  readonly code: string;
-
-  @IsOptional()
-  @IsString()
-  readonly token: string;
-
-  @IsOptional()
-  @IsString()
-  readonly secret: string;
+  readonly password: string;
 }
