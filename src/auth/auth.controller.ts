@@ -1,7 +1,15 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  ConflictException,
+  Controller,
+  Get,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { SignupUserDto } from 'src/dto/signup-user.dto';
 import { VerifyAuthMailToken } from 'src/dto/verify-auth-mail-token.dto';
 import { MailService } from 'src/mail/mail.service';
+import { User } from 'src/schemas/user.schema';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -22,9 +30,9 @@ export class AuthController {
 
   @Post('/signup')
   async signup(@Body() dto: SignupUserDto): Promise<object> {
-    // 회원 가입 => 메일 토큰 검증하는 컬럼 생성 ( 이 컬럼은 비밀번호 잃어 버렸을 때도 사용 )
     const authMailToken: string = this.authService.generateAuthMailToken();
-    await this.authService.signup(dto, authMailToken);
+    const user: User = await this.authService.signup(dto, authMailToken);
+    if (!user) throw new ConflictException(`Existing e_mail : ${dto.e_mail}`);
     await this.mailService.sendAuthMailToken(dto.e_mail, authMailToken);
     return { message: 'success', data: null };
   }
