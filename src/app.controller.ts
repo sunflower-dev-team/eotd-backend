@@ -6,4 +6,14 @@ export class AppController {
   home() {
     return 'Welcome EOTD API';
   }
+
+  @Get('/success')
+  success() {
+    return 'success';
+  }
+
+  @Get('/failed')
+  failed() {
+    return 'failed';
+  }
 }
