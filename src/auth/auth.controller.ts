@@ -80,7 +80,7 @@ export class AuthController {
     @Res() res: Response,
   ): Promise<object> {
     const user: User | null = await this.usersService.findUser(dto.e_mail);
-    if (!user) throw new NotFoundException('Not exist user');
+    if (!user) throw new NotFoundException('No exist user');
     else if (!user.isVerifyMailToken)
       throw new ForbiddenException('You must authenticate mail');
     else if (!this.authService.validatePassword(dto.password, user.password))
