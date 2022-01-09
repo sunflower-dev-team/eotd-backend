@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { JWTTokenData } from 'src/interfaces/jwt-token-data.interface';
+import { JWTTokenData } from 'src/auth/interfaces/jwt-token-data.interface';
 
 @Injectable()
 export class JWTStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -19,8 +19,7 @@ export class JWTStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: JWTTokenData | null) {
-    console.log(payload);
+  async validate(payload: JWTTokenData): Promise<JWTTokenData> {
     if (!payload.isVerifyMailToken)
       throw new ForbiddenException('You must authenticate mail');
     return payload;

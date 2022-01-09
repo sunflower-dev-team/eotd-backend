@@ -1,12 +1,10 @@
 import {
   Body,
-  ConflictException,
   Controller,
   ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Post,
   Query,
@@ -19,12 +17,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { SigninUserDto } from 'src/auth/dto/signin-user.dto';
 import { SignupUserDto } from 'src/auth/dto/signup-user.dto';
-import { VerifyAuthMailToken } from 'src/auth/dto/verify-auth-mail-token.dto';
-import { JWTTokenData } from 'src/interfaces/jwt-token-data.interface';
-import { UserInfo } from 'src/interfaces/user-info.interface';
+import { VerifyAuthMailTokenDto } from 'src/auth/dto/verify-auth-mail-token.dto';
 import { MailService } from 'src/mail/mail.service';
-import { Certificate } from 'src/schemas/certificate.schema';
-import { User } from 'src/schemas/user.schema';
 import { UsersService } from 'src/users/users.service';
 import { AuthService } from './auth.service';
 
@@ -39,37 +33,40 @@ export class AuthController {
 
   @Get('/mail')
   async verifyAuthMailToken(
-    @Query() dto: VerifyAuthMailToken,
+    @Query() dto: VerifyAuthMailTokenDto,
     @Res() res: Response,
   ): Promise<void> {
-    const isVerifyMailToken: boolean =
-      await this.authService.verifyAuthMailToken(dto);
+    const user = await this.usersService.findUser(dto.e_mail);
+    const userInfo = this.usersService.translateToResData(user);
+    let isVerifyMail: boolean;
 
-    if (isVerifyMailToken) {
-      const user: User = await this.usersService.findUser(dto.e_mail);
-      const userInfo: UserInfo = this.usersService.translateToResData(user);
-      const { refreshToken, refreshSecret } =
-        this.authService.generateRefreshTokenAndSecret(userInfo);
-      this.authService.updateRefreshToken(
-        dto.e_mail,
-        refreshToken,
-        refreshSecret,
-      );
-      return res.redirect(this.config.get('SUCCESS_URL'));
-    }
-    return res.redirect(this.config.get('FAILED_URL'));
+    userInfo.isVerifyMailToken
+      ? (isVerifyMail = false)
+      : (isVerifyMail = await this.authService.verifyAuthMailToken(dto));
+
+    if (!isVerifyMail) return res.redirect(this.config.get('FAILED_URL'));
+
+    userInfo.isVerifyMailToken = true;
+    const { refreshToken, refreshSecret } =
+      this.authService.generateRefreshTokenAndSecret(userInfo);
+
+    this.authService.updateRefreshToken(
+      dto.e_mail,
+      refreshToken,
+      refreshSecret,
+    );
+
+    return res.redirect(this.config.get('SUCCESS_URL'));
   }
 
   @Post('/signup')
   async signUp(@Body() dto: SignupUserDto): Promise<object> {
-    const authMailToken: string = this.authService.generateAuthMailToken();
-
-    const user: User | null = await this.authService.createUser(dto);
-    if (!user) throw new ConflictException(`Existing e_mail : ${dto.e_mail}`);
+    const authMailToken = this.authService.generateAuthMailToken();
+    const user = await this.authService.createUser(dto);
 
     await this.authService.createCertificate(user.e_mail, authMailToken);
-
     await this.mailService.sendAuthMailToken(dto.e_mail, authMailToken);
+
     return { message: 'success', data: null };
   }
 
@@ -79,16 +76,14 @@ export class AuthController {
     @Body() dto: SigninUserDto,
     @Res() res: Response,
   ): Promise<object> {
-    const user: User | null = await this.usersService.findUser(dto.e_mail);
-    if (!user) throw new NotFoundException('No exist user');
-    else if (!user.isVerifyMailToken)
+    const user = await this.usersService.findUser(dto.e_mail);
+    if (!user.isVerifyMailToken)
       throw new ForbiddenException('You must authenticate mail');
     else if (!this.authService.validatePassword(dto.password, user.password))
       throw new UnauthorizedException(`The password doesn't match`);
 
-    const userInfo: UserInfo = this.usersService.translateToResData(user);
-
-    const accessToken: string = this.authService.generateAccessToken(userInfo);
+    const userInfo = this.usersService.translateToResData(user);
+    const accessToken = this.authService.generateAccessToken(userInfo);
     this.authService.sendAccessToken(res, accessToken);
 
     return res.send({ message: 'success', data: userInfo });
@@ -99,20 +94,19 @@ export class AuthController {
     @Param('e_mail') e_mail: string,
     @Res() res: Response,
   ): Promise<object> {
-    const authInfo: Certificate = await this.authService.findAuthData(e_mail);
-    if (!authInfo) throw new NotFoundException('No exist user');
-
-    let accessToken: any;
-    const tokenData: JWTTokenData | null = this.authService.verifyJwtToken(
-      authInfo.refreshToken,
-      authInfo.refreshSecret,
+    const certificate = await this.authService.findCertificate(e_mail);
+    let accessToken: string;
+    const tokenData = this.authService.verifyJwtToken(
+      certificate.refreshToken,
+      certificate.refreshSecret,
     );
 
     if (!tokenData) {
-      const user: User = await this.usersService.findUser(e_mail);
-      const userInfo: UserInfo = this.usersService.translateToResData(user);
+      const user = await this.usersService.findUser(e_mail);
+      const userInfo = this.usersService.translateToResData(user);
       const { refreshToken, refreshSecret } =
         this.authService.generateRefreshTokenAndSecret(userInfo);
+
       await this.authService.updateRefreshToken(
         e_mail,
         refreshToken,
@@ -120,20 +114,13 @@ export class AuthController {
       );
       accessToken = this.authService.generateAccessToken(userInfo);
     } else {
-      const userInfo: UserInfo =
-        this.usersService.translateToResData(tokenData);
+      const userInfo = this.usersService.translateToResData(tokenData);
       accessToken = this.authService.generateAccessToken(userInfo);
     }
-
     res.clearCookie('accessToken');
     this.authService.sendAccessToken(res, accessToken);
-    return res.send({ message: 'success', data: null });
-  }
 
-  @Get('/test')
-  @UseGuards(AuthGuard('jwt'))
-  async test() {
-    return;
+    return res.send({ message: 'success', data: null });
   }
 
   @Get('/oauth')

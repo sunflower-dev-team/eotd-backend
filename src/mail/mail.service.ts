@@ -1,5 +1,5 @@
 import { MailerService } from '@nestjs-modules/mailer';
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -26,8 +26,8 @@ export class MailService {
           url,
         },
       })
-      .catch((err) => {
-        throw err;
+      .catch(() => {
+        throw new InternalServerErrorException('The mail has not been sent');
       });
     return;
   }

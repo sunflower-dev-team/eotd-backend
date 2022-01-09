@@ -3,9 +3,9 @@ import { Document } from 'mongoose';
 
 export type CertificateDocument = Certificate & Document;
 
-@Schema({ versionKey: false })
+@Schema({ collection: 'certificate', versionKey: false })
 export class Certificate {
-  @Prop({ required: true, unique: true })
+  @Prop({ unique: true, required: true })
   e_mail: string;
 
   @Prop({ required: true })

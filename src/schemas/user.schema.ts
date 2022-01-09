@@ -3,9 +3,9 @@ import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
-@Schema({ versionKey: false })
+@Schema({ collection: 'user', versionKey: false })
 export class User {
-  @Prop({ required: true, unique: true })
+  @Prop({ unique: true, required: true })
   e_mail: string;
 
   @Prop({ required: true })
