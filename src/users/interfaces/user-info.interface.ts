@@ -5,4 +5,5 @@ export interface UserInfo {
   birth: number;
   isVerifyMailToken: boolean;
   kakao_oauth: boolean;
+  admin: boolean;
 }

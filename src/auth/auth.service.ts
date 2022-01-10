@@ -41,9 +41,12 @@ export class AuthService {
   async verifyAuthMailToken(dto: VerifyAuthMailTokenDto): Promise<boolean> {
     const { e_mail, authMailToken } = dto;
 
-    const certificate: Certificate = await this.certificateModel.findOne({
-      e_mail,
-    });
+    const certificate: Certificate = await this.certificateModel
+      .findOne({
+        e_mail,
+      })
+      .select({ _id: 0 });
+
     if (!certificate && authMailToken !== certificate.authMailToken)
       return false;
 
@@ -57,11 +60,11 @@ export class AuthService {
     return true;
   }
 
-  async createUser(userInfo: SignupUserDto): Promise<User> {
+  async createUser(userInfo: SignupUserDto): Promise<void> {
     const salt: string = bcrypt.genSaltSync();
     const password: string = bcrypt.hashSync(userInfo.password, salt);
 
-    const createdUser: User = await this.userModel
+    await this.userModel
       .create({
         ...userInfo,
         password,
@@ -69,7 +72,7 @@ export class AuthService {
       .catch(() => {
         throw new ConflictException(`Existing e_mail : ${userInfo.e_mail}`);
       });
-    return JSON.parse(JSON.stringify(createdUser));
+    return;
   }
 
   async createCertificate(
@@ -122,9 +125,11 @@ export class AuthService {
   }
 
   async findCertificate(e_mail: string): Promise<Certificate> {
-    const certificate: Certificate = await this.certificateModel.findOne({
-      e_mail,
-    });
+    const certificate: Certificate = await this.certificateModel
+      .findOne({
+        e_mail,
+      })
+      .select({ _id: 0 });
 
     if (!certificate) throw new NotFoundException('No exist user');
     return JSON.parse(JSON.stringify(certificate));

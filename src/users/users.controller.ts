@@ -7,9 +7,7 @@ export class UsersController {
 
   @Get('/:e_mail')
   async validateEmail(@Param('e_mail') e_mail: string): Promise<object> {
-    const user = await this.usersService.findUser(e_mail);
-    const userInfo = this.usersService.translateToResData(user);
-
+    const userInfo = await this.usersService.findUser(e_mail);
     return { message: 'success', data: userInfo };
   }
 }

@@ -5,6 +5,7 @@ export interface JWTTokenData {
   birth: number;
   isVerifyMailToken: boolean;
   kakao_oauth: boolean;
+  admin: boolean;
   iat: number;
   exp: number;
 }

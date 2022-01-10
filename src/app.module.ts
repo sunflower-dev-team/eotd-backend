@@ -5,6 +5,7 @@ import { UsersModule } from './users/users.module';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { DailyModule } from './daily/daily.module';
+import { ExerciseModule } from './exercise/exercise.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { DailyModule } from './daily/daily.module';
     UsersModule,
     AuthModule,
     DailyModule,
+    ExerciseModule,
   ],
   controllers: [AppController],
   providers: [],

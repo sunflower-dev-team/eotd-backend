@@ -74,17 +74,21 @@ export class DailyService {
   // Read
 
   async findAllDaily(e_mail: string): Promise<Daily[]> {
-    const dailyInfoList: Daily[] = await this.dailyModel.find({ e_mail });
+    const dailyInfoList: Daily[] = await this.dailyModel
+      .find({ e_mail })
+      .select({ _id: 0 });
     if (!dailyInfoList.length)
       throw new NotFoundException('No exist dailyInfoList');
     return dailyInfoList;
   }
 
   async findOneDaily(e_mail: string, date: number): Promise<Daily> {
-    const dailyInfo: Daily | null = await this.dailyModel.findOne({
-      e_mail,
-      date,
-    });
+    const dailyInfo: Daily | null = await this.dailyModel
+      .findOne({
+        e_mail,
+        date,
+      })
+      .select({ _id: 0 });
     if (!dailyInfo)
       throw new NotFoundException(
         'There is no info corresponding to that date',

@@ -10,7 +10,6 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { getCurrentDate } from 'src/functions';
 import { DailyDietInfo } from 'src/daily/interfaces/daily-diet-info.interface';
@@ -27,13 +26,14 @@ import {
   UpdateDailyExerciseQueryDto,
   UpdateDailyExerciseBodyDto,
 } from './dto/update-daily-exercise.dto';
+import { VerifyMailGuard } from 'src/auth/guards/verify-mail.guard';
 
 @Controller('daily')
 export class DailyController {
   constructor(private readonly dailyService: DailyService) {}
 
   @Get('/')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(VerifyMailGuard)
   async findAllDaily(@Req() req: Request): Promise<object> {
     const { e_mail }: any = req.user;
     const dailyInfoList = await this.dailyService.findAllDaily(e_mail);
@@ -42,7 +42,7 @@ export class DailyController {
   }
 
   @Get('/:date')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(VerifyMailGuard)
   async findOneDaily(
     @Req() req: Request,
     @Param('date') date: number,
@@ -54,7 +54,7 @@ export class DailyController {
   }
 
   @Post('/diet')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(VerifyMailGuard)
   async createDailyDiet(
     @Req() req: Request,
     @Body() dto: CreateDailyDietDto,
@@ -70,7 +70,7 @@ export class DailyController {
   }
 
   @Patch('/diet')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(VerifyMailGuard)
   async updateOneDailyDiet(
     @Req() req: Request,
     @Query() queryDto: UpdateDailyDietQueryDto,
@@ -85,7 +85,7 @@ export class DailyController {
   }
 
   @Delete('/diet/:date')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(VerifyMailGuard)
   async deleteDailyDiet(
     @Req() req: Request,
     @Param('date') date: number,
@@ -101,7 +101,7 @@ export class DailyController {
   }
 
   @Post('/exercise')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(VerifyMailGuard)
   async createDailyExercise(
     @Req() req: Request,
     @Body() dto: CreateDailyExerciseDto,
@@ -117,7 +117,7 @@ export class DailyController {
   }
 
   @Patch('/exercise')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(VerifyMailGuard)
   async updateOneDailyExercise(
     @Req() req: Request,
     @Query() query: UpdateDailyExerciseQueryDto,
@@ -137,7 +137,7 @@ export class DailyController {
   }
 
   @Delete('/exercise/:date')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(VerifyMailGuard)
   async deleteDailyExercise(
     @Req() req: Request,
     @Param('date') date: number,

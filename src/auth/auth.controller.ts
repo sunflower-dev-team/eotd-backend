@@ -10,10 +10,8 @@ import {
   Query,
   Res,
   UnauthorizedException,
-  UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { SigninUserDto } from 'src/auth/dto/signin-user.dto';
 import { SignupUserDto } from 'src/auth/dto/signup-user.dto';
@@ -62,9 +60,9 @@ export class AuthController {
   @Post('/signup')
   async signUp(@Body() dto: SignupUserDto): Promise<object> {
     const authMailToken = this.authService.generateAuthMailToken();
-    const user = await this.authService.createUser(dto);
 
-    await this.authService.createCertificate(user.e_mail, authMailToken);
+    await this.authService.createUser(dto);
+    await this.authService.createCertificate(dto.e_mail, authMailToken);
     await this.mailService.sendAuthMailToken(dto.e_mail, authMailToken);
 
     return { message: 'success', data: null };

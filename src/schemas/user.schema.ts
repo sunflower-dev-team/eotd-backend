@@ -25,6 +25,9 @@ export class User {
 
   @Prop({ required: true, default: false })
   kakao_oauth: boolean;
+
+  @Prop({ required: true, default: false })
+  admin: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
