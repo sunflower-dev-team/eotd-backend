@@ -3,17 +3,17 @@ import { IsOptional, IsString } from 'class-validator';
 export class UpdateExerciseDto {
   @IsOptional()
   @IsString()
-  target: string;
+  readonly target: string;
 
   @IsOptional()
   @IsString()
-  description: string;
+  readonly description: string;
 
   @IsOptional()
   @IsString({ each: true })
-  links: string[];
+  readonly links: string[];
 
   @IsOptional()
   @IsString({ each: true })
-  first_aid: string[];
+  readonly first_aid: string[];
 }

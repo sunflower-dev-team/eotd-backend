@@ -14,5 +14,6 @@ import { User, UserSchema } from 'src/schemas/user.schema';
   ],
   providers: [DailyService],
   controllers: [DailyController],
+  exports: [DailyService],
 })
 export class DailyModule {}

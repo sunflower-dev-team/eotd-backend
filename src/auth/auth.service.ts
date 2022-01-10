@@ -31,7 +31,36 @@ export class AuthService {
     private readonly config: ConfigService,
   ) {}
 
-  // signup & mail authorization
+  // user C
+
+  async createUser(userInfo: SignupUserDto): Promise<void> {
+    const salt: string = bcrypt.genSaltSync();
+    const password: string = bcrypt.hashSync(userInfo.password, salt);
+
+    await this.userModel
+      .create({
+        ...userInfo,
+        password,
+      })
+      .catch(() => {
+        throw new ConflictException(`Existing e_mail : ${userInfo.e_mail}`);
+      });
+    return;
+  }
+
+  // user D
+
+  async deleteUser(e_mail: string): Promise<void> {
+    const previousUser = await this.userModel
+      .findOneAndDelete({ e_mail })
+      .catch(() => {
+        throw new InternalServerErrorException('User has not been deleted');
+      });
+    if (!previousUser) throw new NotFoundException('No exist user');
+    return;
+  }
+
+  // auth-mail-token
 
   generateAuthMailToken(): string {
     const authMailToken: string = uuid.v4();
@@ -60,20 +89,7 @@ export class AuthService {
     return true;
   }
 
-  async createUser(userInfo: SignupUserDto): Promise<void> {
-    const salt: string = bcrypt.genSaltSync();
-    const password: string = bcrypt.hashSync(userInfo.password, salt);
-
-    await this.userModel
-      .create({
-        ...userInfo,
-        password,
-      })
-      .catch(() => {
-        throw new ConflictException(`Existing e_mail : ${userInfo.e_mail}`);
-      });
-    return;
-  }
+  // certificate C
 
   async createCertificate(
     e_mail: string,
@@ -92,22 +108,20 @@ export class AuthService {
     return;
   }
 
-  // jwt Refresh
+  // certificate R
 
-  generateRefreshTokenAndSecret(userInfo: UserInfo): {
-    refreshToken: string;
-    refreshSecret: string;
-  } {
-    const refreshSecret: string = uuid.v4();
-    const refreshToken: string = this.jwtService.sign(
-      { ...userInfo },
-      {
-        secret: refreshSecret,
-        expiresIn: 60 * 60 * 24 * 7,
-      },
-    );
-    return { refreshToken, refreshSecret };
+  async findCertificate(e_mail: string): Promise<Certificate> {
+    const certificate: Certificate = await this.certificateModel
+      .findOne({
+        e_mail,
+      })
+      .select({ _id: 0 });
+
+    if (!certificate) throw new NotFoundException('No exist user');
+    return JSON.parse(JSON.stringify(certificate));
   }
+
+  // certificate U
 
   async updateRefreshToken(
     e_mail: string,
@@ -124,26 +138,37 @@ export class AuthService {
     return;
   }
 
-  async findCertificate(e_mail: string): Promise<Certificate> {
-    const certificate: Certificate = await this.certificateModel
-      .findOne({
-        e_mail,
-      })
-      .select({ _id: 0 });
+  // certificate D
 
-    if (!certificate) throw new NotFoundException('No exist user');
-    return JSON.parse(JSON.stringify(certificate));
+  async deleteCertificate(e_mail: string): Promise<void> {
+    const previousCertificate = await this.certificateModel
+      .findOneAndDelete({ e_mail })
+      .catch(() => {
+        throw new InternalServerErrorException(
+          'No authentication model has been deleted',
+        );
+      });
+    if (!previousCertificate)
+      throw new NotFoundException(`No exist ${e_mail}'s certificate`);
+    return;
   }
 
-  verifyJwtToken(token: string, secret: string): JWTTokenData {
-    try {
-      return this.jwtService.verify(token, { secret });
-    } catch {
-      return null;
-    }
-  }
+  // jwt
 
-  // jwt Access
+  generateRefreshTokenAndSecret(userInfo: UserInfo): {
+    refreshToken: string;
+    refreshSecret: string;
+  } {
+    const refreshSecret: string = uuid.v4();
+    const refreshToken: string = this.jwtService.sign(
+      { ...userInfo },
+      {
+        secret: refreshSecret,
+        expiresIn: 60 * 60 * 24 * 7,
+      },
+    );
+    return { refreshToken, refreshSecret };
+  }
 
   generateAccessToken(payload: UserInfo): string {
     const JWT_ACCESS_SECRET = this.config.get('JWT_ACCESS_SECRET');
@@ -163,6 +188,19 @@ export class AuthService {
       maxAge: 1000 * 60 * 60,
     });
     return;
+  }
+
+  removeAccessToken(res: Response): void {
+    res.clearCookie('accessToken');
+    return;
+  }
+
+  verifyJwtToken(token: string, secret: string): JWTTokenData {
+    try {
+      return this.jwtService.verify(token, { secret });
+    } catch {
+      return null;
+    }
   }
 
   // signin

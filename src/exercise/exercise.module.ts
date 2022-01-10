@@ -12,5 +12,6 @@ import { Exercise, ExerciseSchema } from 'src/schemas/exercise.schema';
   ],
   providers: [ExerciseService],
   controllers: [ExerciseController],
+  exports: [ExerciseService],
 })
 export class ExerciseModule {}

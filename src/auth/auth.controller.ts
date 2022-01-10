@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   HttpCode,
@@ -8,17 +9,23 @@ import {
   Param,
   Post,
   Query,
+  Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { SigninUserDto } from 'src/auth/dto/signin-user.dto';
 import { SignupUserDto } from 'src/auth/dto/signup-user.dto';
 import { VerifyAuthMailTokenDto } from 'src/auth/dto/verify-auth-mail-token.dto';
+import { DailyService } from 'src/daily/daily.service';
+import { translateToResData } from 'src/functions';
 import { MailService } from 'src/mail/mail.service';
 import { UsersService } from 'src/users/users.service';
 import { AuthService } from './auth.service';
+import { WithdrawalUserDto } from './dto/withdrawal-user.dto';
+import { VerifyMailGuard } from './guards/verify-mail.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -26,6 +33,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly mailService: MailService,
     private readonly usersService: UsersService,
+    private readonly dailyService: DailyService,
     private readonly config: ConfigService,
   ) {}
 
@@ -35,7 +43,7 @@ export class AuthController {
     @Res() res: Response,
   ): Promise<void> {
     const user = await this.usersService.findUser(dto.e_mail);
-    const userInfo = this.usersService.translateToResData(user);
+    const userInfo = translateToResData(user);
     let isVerifyMail: boolean;
 
     userInfo.isVerifyMailToken
@@ -80,11 +88,43 @@ export class AuthController {
     else if (!this.authService.validatePassword(dto.password, user.password))
       throw new UnauthorizedException(`The password doesn't match`);
 
-    const userInfo = this.usersService.translateToResData(user);
+    const userInfo = translateToResData(user);
     const accessToken = this.authService.generateAccessToken(userInfo);
     this.authService.sendAccessToken(res, accessToken);
 
     return res.send({ message: 'success', data: userInfo });
+  }
+
+  @Get('/signout')
+  @UseGuards(VerifyMailGuard)
+  signOut(@Res() res: Response): object {
+    this.authService.removeAccessToken(res);
+    return res.send({ message: 'success', data: null });
+  }
+
+  @Delete('/withdrawal')
+  @UseGuards(VerifyMailGuard)
+  async deleteUser(
+    @Req() req: Request,
+    @Body() dto: WithdrawalUserDto,
+    @Res() res: Response,
+  ): Promise<object> {
+    const { e_mail }: any = req.user;
+    const user = await this.usersService.findUser(e_mail);
+
+    if (!this.authService.validatePassword(dto.password, user.password))
+      throw new UnauthorizedException(`The password doesn't match`);
+    await Promise.all([
+      this.authService.deleteUser(e_mail),
+      this.authService.deleteCertificate(e_mail),
+      this.usersService.deleteOneUserDetail(e_mail).catch(() => {
+        return;
+      }),
+      this.dailyService.deleteDaily(e_mail),
+    ]);
+    this.authService.removeAccessToken(res);
+
+    return res.send({ message: 'success', data: null });
   }
 
   @Get('/refresh/:e_mail')
@@ -101,7 +141,7 @@ export class AuthController {
 
     if (!tokenData) {
       const user = await this.usersService.findUser(e_mail);
-      const userInfo = this.usersService.translateToResData(user);
+      const userInfo = translateToResData(user);
       const { refreshToken, refreshSecret } =
         this.authService.generateRefreshTokenAndSecret(userInfo);
 
@@ -112,10 +152,10 @@ export class AuthController {
       );
       accessToken = this.authService.generateAccessToken(userInfo);
     } else {
-      const userInfo = this.usersService.translateToResData(tokenData);
+      const userInfo = translateToResData(tokenData);
       accessToken = this.authService.generateAccessToken(userInfo);
     }
-    res.clearCookie('accessToken');
+    this.authService.removeAccessToken(res);
     this.authService.sendAccessToken(res, accessToken);
 
     return res.send({ message: 'success', data: null });

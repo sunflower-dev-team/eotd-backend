@@ -17,7 +17,7 @@ export class DailyService {
     @InjectModel(Daily.name) private dailyModel: Model<DailyDocument>,
   ) {}
 
-  // Create
+  // C
 
   async findAndCreateDaliyForm(e_mail: string, date: number): Promise<void> {
     const dailyForm: Daily | null = await this.dailyModel.findOne({
@@ -71,7 +71,7 @@ export class DailyService {
     return;
   }
 
-  // Read
+  // R
 
   async findAllDaily(e_mail: string): Promise<Daily[]> {
     const dailyInfoList: Daily[] = await this.dailyModel
@@ -96,7 +96,7 @@ export class DailyService {
     return dailyInfo;
   }
 
-  // Update
+  // U
 
   async updateOneDailyDiet(
     e_mail: string,
@@ -165,7 +165,8 @@ export class DailyService {
     return;
   }
 
-  // Delete
+  // D
+
   async deleteAllDailyDiet(e_mail: string, date: number): Promise<void> {
     const previousDaily = await this.dailyModel
       .findOneAndUpdate(
@@ -237,6 +238,15 @@ export class DailyService {
 
     if (!previousDaily)
       throw new NotFoundException(`No exist exercise_id:${exercise_id}`);
+    return;
+  }
+
+  async deleteDaily(e_mail: string): Promise<void> {
+    await this.dailyModel.deleteMany({ e_mail }).catch(() => {
+      throw new InternalServerErrorException(
+        `${e_mail}'s daily-list has not been deleted`,
+      );
+    });
     return;
   }
 }

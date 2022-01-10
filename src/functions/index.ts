@@ -1,3 +1,7 @@
+import { JWTTokenData } from 'src/auth/interfaces/jwt-token-data.interface';
+import { User } from 'src/schemas/user.schema';
+import { UserInfo } from 'src/users/interfaces/user-info.interface';
+
 export const getCurrentDate = (): number => {
   const date = new Date(Date.now());
   const year = date.getFullYear().toString();
@@ -8,9 +12,17 @@ export const getCurrentDate = (): number => {
   return Number(year + month + day);
 };
 
-// export const getCurrentTime = (): string => {
-//   const date = new Date(Date.now());
-//   const hour = date.getHours();
-//   const minute = date.getMinutes();
-//   return hour + ':' + minute;
-// };
+export const translateToResData = (userInfo: User | JWTTokenData): UserInfo => {
+  const { e_mail, name, gender, birth, isVerifyMailToken, kakao_oauth, admin } =
+    userInfo;
+
+  return {
+    e_mail,
+    name,
+    gender,
+    birth,
+    isVerifyMailToken,
+    kakao_oauth,
+    admin,
+  };
+};
