@@ -9,7 +9,7 @@ export class DailyExercise {
   exercise_id: string;
 
   @Prop({ required: true })
-  exercise_list: string[];
+  exercise_name: string;
 
   @Prop()
   exercise_img: string;

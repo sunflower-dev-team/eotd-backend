@@ -42,6 +42,7 @@ export class ExerciseController {
       await this.exerciseService.createExercise(dto);
       return { message: 'success', data: null };
     }
+
     throw new ConflictException(`Existing exercise:${dto.exercise_name}`);
   }
 

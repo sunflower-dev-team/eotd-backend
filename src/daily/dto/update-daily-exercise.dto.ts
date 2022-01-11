@@ -2,8 +2,8 @@ import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UpdateDailyExerciseBodyDto {
   @IsOptional()
-  @IsString({ each: true })
-  readonly exercise_list: string[];
+  @IsString()
+  readonly exercise_name: string;
 
   @IsOptional()
   @IsString()

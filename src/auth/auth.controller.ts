@@ -24,6 +24,7 @@ import { translateToResData } from 'src/functions';
 import { MailService } from 'src/mail/mail.service';
 import { UsersService } from 'src/users/users.service';
 import { AuthService } from './auth.service';
+import { ValidatePasswordDto } from './dto/validate-password.dto';
 import { WithdrawalUserDto } from './dto/withdrawal-user.dto';
 import { VerifyMailGuard } from './guards/verify-mail.guard';
 
@@ -63,6 +64,24 @@ export class AuthController {
     );
 
     return res.redirect(this.config.get('SUCCESS_URL'));
+  }
+
+  @Get('/password')
+  @UseGuards(VerifyMailGuard)
+  async validatePassword(
+    @Req() req: Request,
+    @Body() dto: ValidatePasswordDto,
+  ): Promise<object> {
+    const { e_mail }: any = req.user;
+    const user = await this.usersService.findUser(e_mail);
+    const isSamePassword = await this.authService.validatePassword(
+      dto.current_password,
+      user.password,
+    );
+
+    if (!isSamePassword)
+      throw new UnauthorizedException(`The password doesn't match`);
+    return { message: 'success', data: null };
   }
 
   @Post('/signup')

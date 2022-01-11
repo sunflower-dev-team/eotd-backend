@@ -21,7 +21,7 @@ export class ExerciseService {
   async createExercise(exerciseInfo: CreateExerciseDto): Promise<void> {
     await this.exerciseModel.create(exerciseInfo).catch(() => {
       throw new InternalServerErrorException(
-        'ExerciseInfo has not been created',
+        `${exerciseInfo.exercise_name} has not been created`,
       );
     });
     return;
@@ -61,8 +61,9 @@ export class ExerciseService {
     exercise_name: string,
     exerciseInfo: UpdateExerciseDto,
   ): Promise<void> {
-    const previousExercise: Exercise = await this.exerciseModel
+    const previousExercise: ExerciseInfo = await this.exerciseModel
       .findOneAndUpdate({ exercise_name }, exerciseInfo)
+      .select({ _id: 0 })
       .catch(() => {
         throw new InternalServerErrorException('Exercise has not been updated');
       });
@@ -74,10 +75,11 @@ export class ExerciseService {
   // D
 
   async deleteOneExercise(exercise_name: string): Promise<void> {
-    const previousExercise = await this.exerciseModel
+    const previousExercise: ExerciseInfo = await this.exerciseModel
       .findOneAndDelete({
         exercise_name,
       })
+      .select({ _id: 0 })
       .catch(() => {
         throw new InternalServerErrorException('Exercise has not been deleted');
       });

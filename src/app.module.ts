@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { DailyModule } from './daily/daily.module';
 import { ExerciseModule } from './exercise/exercise.module';
+import { CustomizedExerciseModule } from './customized-exercise/customized-exercise.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ExerciseModule } from './exercise/exercise.module';
     AuthModule,
     DailyModule,
     ExerciseModule,
+    CustomizedExerciseModule,
   ],
   controllers: [AppController],
   providers: [],
