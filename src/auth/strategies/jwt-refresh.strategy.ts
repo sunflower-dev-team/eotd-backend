@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
@@ -8,15 +8,25 @@ import { translateToResData } from 'src/functions';
 import { UserInfo } from 'src/users/interfaces/user-info.interface';
 
 @Injectable()
-export class JWTStrategy extends PassportStrategy(Strategy, 'jwt') {
+export class JWTRefreshStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-refresh',
+) {
   constructor(private readonly config: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: Request) => {
-          return req?.cookies?.accessToken;
+          const accessToken: string = req?.cookies?.accessToken;
+          if (!accessToken) {
+            const swaggerToken: any = req?.headers?.accesstoken;
+            if (!swaggerToken)
+              throw new UnauthorizedException(`Not found accessToken`);
+            return swaggerToken;
+          }
+          return accessToken;
         },
       ]),
-      ignoreExpiration: false,
+      ignoreExpiration: true,
       secretOrKey: config.get('JWT_ACCESS_SECRET'),
     });
   }

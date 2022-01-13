@@ -9,7 +9,8 @@ import { User, UserSchema } from 'src/schemas/user.schema';
 import { UsersModule } from 'src/users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { JWTStrategy } from './strategies/jwt.strategy';
+import { JWTAccessStrategy } from './strategies/jwt-access.strategy';
+import { JWTRefreshStrategy } from './strategies/jwt-refresh.strategy';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { JWTStrategy } from './strategies/jwt.strategy';
     DailyModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JWTStrategy],
-  exports: [PassportModule, JWTStrategy],
+  providers: [AuthService, JWTAccessStrategy, JWTRefreshStrategy],
+  exports: [PassportModule, JWTAccessStrategy, JWTRefreshStrategy],
 })
 export class AuthModule {}

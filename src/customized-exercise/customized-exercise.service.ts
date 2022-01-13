@@ -5,13 +5,13 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ExerciseInfo } from 'src/exercise/interfaces/exercise-info.interface';
+import { CreateExerciseDto } from 'src/exercise/dto/create-exercise.dto';
+import { UpdateExerciseDto } from 'src/exercise/dto/update-exercise.dto';
 import {
   CustomizedExercise,
   CustomizedExerciseDocument,
 } from 'src/schemas/customized-exercise.schema';
-import { CreateCustomizedExerciseDto } from './dto/create-customized-exercise.dto';
-import { UpdateCustomizedExerciseDto } from './dto/update-customized-exercise.dto';
+import { Exercise } from 'src/schemas/exercise.schema';
 
 @Injectable()
 export class CustomizedExerciseService {
@@ -24,7 +24,7 @@ export class CustomizedExerciseService {
 
   async createExercise(
     e_mail: string,
-    exerciseInfo: CreateCustomizedExerciseDto,
+    exerciseInfo: CreateExerciseDto,
   ): Promise<void> {
     await this.customizedExerciseModel
       .create({ e_mail, ...exerciseInfo })
@@ -38,8 +38,8 @@ export class CustomizedExerciseService {
 
   // R
 
-  async findAllExercise(e_mail: string): Promise<ExerciseInfo[]> {
-    const exerciseList: ExerciseInfo[] = await this.customizedExerciseModel
+  async findAllExercise(e_mail: string): Promise<Exercise[]> {
+    const exerciseList: Exercise[] = await this.customizedExerciseModel
       .find({ e_mail })
       .select({ _id: 0, e_mail: 0 });
 
@@ -51,8 +51,8 @@ export class CustomizedExerciseService {
   async findAllExerciseByTarget(
     e_mail: string,
     target: string,
-  ): Promise<ExerciseInfo[]> {
-    const exerciseList: ExerciseInfo[] = await this.customizedExerciseModel
+  ): Promise<Exercise[]> {
+    const exerciseList: Exercise[] = await this.customizedExerciseModel
       .find({
         e_mail,
         target,
@@ -67,8 +67,8 @@ export class CustomizedExerciseService {
   async findOneExerciseByName(
     e_mail: string,
     exercise_name: string,
-  ): Promise<ExerciseInfo> {
-    const exerciseInfo: ExerciseInfo = await this.customizedExerciseModel
+  ): Promise<Exercise> {
+    const exerciseInfo: Exercise = await this.customizedExerciseModel
       .findOne({ e_mail, exercise_name })
       .select({ _id: 0, e_mail: 0 });
 
@@ -84,9 +84,9 @@ export class CustomizedExerciseService {
   async updateOneExercise(
     e_mail: string,
     exercise_name: string,
-    exerciseInfo: UpdateCustomizedExerciseDto,
+    exerciseInfo: UpdateExerciseDto,
   ): Promise<void> {
-    const previousExercise: ExerciseInfo = await this.customizedExerciseModel
+    const previousExercise: Exercise = await this.customizedExerciseModel
       .findOneAndUpdate(
         {
           e_mail,
@@ -111,7 +111,7 @@ export class CustomizedExerciseService {
     e_mail: string,
     exercise_name: string,
   ): Promise<void> {
-    const previousExercise: ExerciseInfo = await this.customizedExerciseModel
+    const previousExercise: Exercise = await this.customizedExerciseModel
       .findOneAndDelete({
         e_mail,
         exercise_name,
