@@ -12,6 +12,7 @@ import { UpdateUserDetailDto } from './dto/update-user-detail.dto';
 import { CreateUserDetailDto } from './dto/create-user-detail.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -20,6 +21,23 @@ export class UsersService {
     @InjectModel(UserDetail.name)
     private userDetailModel: Model<UserDetailDocument>,
   ) {}
+
+  // user C
+
+  async createUser(userInfo: CreateUserDto): Promise<void> {
+    const salt: string = bcrypt.genSaltSync();
+    const password: string = bcrypt.hashSync(userInfo.password, salt);
+
+    await this.userModel
+      .create({
+        ...userInfo,
+        password,
+      })
+      .catch(() => {
+        throw new ConflictException(`Existing e_mail : ${userInfo.e_mail}`);
+      });
+    return;
+  }
 
   // user R
 
@@ -87,7 +105,7 @@ export class UsersService {
       .findOneAndUpdate({ e_mail }, detailInfo)
       .catch(() => {
         throw new InternalServerErrorException(
-          'User-detail has not been updated',
+          `User'detail has not been updated`,
         );
       });
 
@@ -105,7 +123,7 @@ export class UsersService {
       })
       .catch(() => {
         throw new InternalServerErrorException(
-          'User-detail has not been deleted',
+          `User'detail has not been deleted`,
         );
       });
 

@@ -1,8 +1,9 @@
-export interface DailyDietInfo {
-  diet_id: string;
-  diet_type: string;
-  details: string;
-  time: string;
-  meal_img: string;
-  rate: number;
-}
+import { IntersectionType } from '@nestjs/swagger';
+import { CreateDailyDietDto } from '../dto/create-daily-diet.dto';
+
+export class DailyDietInfo extends IntersectionType(
+  CreateDailyDietDto,
+  class {
+    diet_id: string;
+  },
+) {}

@@ -1,19 +1,6 @@
-import { IsOptional, IsString } from 'class-validator';
+import { PartialType, OmitType } from '@nestjs/swagger';
+import { CreateExerciseDto } from './create-exercise.dto';
 
-export class UpdateExerciseDto {
-  @IsOptional()
-  @IsString()
-  readonly target: string;
-
-  @IsOptional()
-  @IsString()
-  readonly description: string;
-
-  @IsOptional()
-  @IsString({ each: true })
-  readonly links: string[];
-
-  @IsOptional()
-  @IsString({ each: true })
-  readonly first_aid: string[];
-}
+export class UpdateExerciseDto extends PartialType(
+  OmitType(CreateExerciseDto, ['exercise_name'] as const),
+) {}

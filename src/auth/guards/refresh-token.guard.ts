@@ -7,7 +7,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
-export class VerifyMailGuard extends AuthGuard('jwt-access') {
+export class RefreshTokenGuard extends AuthGuard('jwt-refresh') {
   canActivate(context: ExecutionContext) {
     return super.canActivate(context);
   }

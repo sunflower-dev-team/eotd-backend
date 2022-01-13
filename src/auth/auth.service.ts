@@ -1,5 +1,4 @@
 import {
-  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -7,7 +6,6 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { SignupUserDto } from 'src/auth/dto/signup-user.dto';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import * as bcrypt from 'bcrypt';
 import * as uuid from 'uuid';
@@ -30,23 +28,6 @@ export class AuthService {
     private certificateModel: Model<CertificateDocument>,
     private readonly config: ConfigService,
   ) {}
-
-  // user C
-
-  async createUser(userInfo: SignupUserDto): Promise<void> {
-    const salt: string = bcrypt.genSaltSync();
-    const password: string = bcrypt.hashSync(userInfo.password, salt);
-
-    await this.userModel
-      .create({
-        ...userInfo,
-        password,
-      })
-      .catch(() => {
-        throw new ConflictException(`Existing e_mail : ${userInfo.e_mail}`);
-      });
-    return;
-  }
 
   // user D
 
@@ -185,7 +166,7 @@ export class AuthService {
       // domain: 'localhost',
       // sameSite: 'none',
       // secure: true,
-      maxAge: 1000 * 60 * 60,
+      // maxAge: 1000 * 60 * 60,
     });
     return;
   }

@@ -8,7 +8,6 @@ import { Model } from 'mongoose';
 import { Exercise, ExerciseDocument } from 'src/schemas/exercise.schema';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
-import { ExerciseInfo } from './interfaces/exercise-info.interface';
 
 @Injectable()
 export class ExerciseService {
@@ -29,16 +28,16 @@ export class ExerciseService {
 
   // R
 
-  async findAllExercise(): Promise<ExerciseInfo[]> {
-    const exerciseList: ExerciseInfo[] = await this.exerciseModel
+  async findAllExercise(): Promise<Exercise[]> {
+    const exerciseList: Exercise[] = await this.exerciseModel
       .find()
       .select({ _id: 0 });
     if (!exerciseList.length) throw new NotFoundException('No exist exercises');
     return exerciseList;
   }
 
-  async findAllExerciseByTarget(target: string): Promise<ExerciseInfo[]> {
-    const exerciseList: ExerciseInfo[] = await this.exerciseModel
+  async findAllExerciseByTarget(target: string): Promise<Exercise[]> {
+    const exerciseList: Exercise[] = await this.exerciseModel
       .find({ target })
       .select({ _id: 0 });
     if (!exerciseList.length)
@@ -46,8 +45,8 @@ export class ExerciseService {
     return exerciseList;
   }
 
-  async findOneExerciseByName(exercise_name: string): Promise<ExerciseInfo> {
-    const exerciseInfo: ExerciseInfo = await this.exerciseModel
+  async findOneExerciseByName(exercise_name: string): Promise<Exercise> {
+    const exerciseInfo: Exercise = await this.exerciseModel
       .findOne({ exercise_name })
       .select({ _id: 0 });
     if (!exerciseInfo)
@@ -61,7 +60,7 @@ export class ExerciseService {
     exercise_name: string,
     exerciseInfo: UpdateExerciseDto,
   ): Promise<void> {
-    const previousExercise: ExerciseInfo = await this.exerciseModel
+    const previousExercise: Exercise = await this.exerciseModel
       .findOneAndUpdate({ exercise_name }, exerciseInfo)
       .select({ _id: 0 })
       .catch(() => {
@@ -75,7 +74,7 @@ export class ExerciseService {
   // D
 
   async deleteOneExercise(exercise_name: string): Promise<void> {
-    const previousExercise: ExerciseInfo = await this.exerciseModel
+    const previousExercise: Exercise = await this.exerciseModel
       .findOneAndDelete({
         exercise_name,
       })
