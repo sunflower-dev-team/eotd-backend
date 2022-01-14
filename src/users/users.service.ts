@@ -78,9 +78,13 @@ export class UsersService {
     e_mail: string,
     detailInfo: CreateUserDetailDto,
   ): Promise<void> {
-    await this.userDetailModel.create({ e_mail, ...detailInfo }).catch(() => {
-      throw new ConflictException(`Existing ${e_mail}'s detail`);
-    });
+    await this.userDetailModel
+      .create({ e_mail, ...detailInfo })
+      .catch(async () => {
+        if (await this.userDetailModel.exists({ e_mail }))
+          throw new ConflictException(`Existing ${e_mail}'s detail`);
+        throw new ConflictException(`Existing nickname:${detailInfo.nickname}`);
+      });
     return;
   }
 
