@@ -17,11 +17,17 @@ export class ExerciseService {
 
   // C
 
-  async createExercise(exerciseInfo: CreateExerciseDto): Promise<void> {
+  async createExercise(
+    exerciseInfo: CreateExerciseDto | CreateExerciseDto[],
+  ): Promise<void> {
+    const isCreateMany = Array.isArray(exerciseInfo);
+
     await this.exerciseModel.create(exerciseInfo).catch(() => {
-      throw new InternalServerErrorException(
-        `${exerciseInfo.exercise_name} has not been created`,
-      );
+      if (!isCreateMany)
+        throw new InternalServerErrorException(
+          `${exerciseInfo.exercise_name} has not been created`,
+        );
+      throw new InternalServerErrorException('Exercises has not been created');
     });
     return;
   }

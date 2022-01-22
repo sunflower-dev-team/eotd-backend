@@ -9,13 +9,13 @@ export type DailyDocument = Daily & Document;
 
 @Schema({ collection: 'daily', versionKey: false })
 export class Daily {
-  @ApiProperty({ description: '날짜', example: 20220113 })
-  @Prop({ required: true, default: getCurrentDate() })
-  date: number;
-
   @ApiProperty({ description: '이메일', example: 'example@naver.com' })
   @Prop({ required: true })
   e_mail: string;
+
+  @ApiProperty({ description: '날짜', example: 20220113 })
+  @Prop({ required: true, default: getCurrentDate() })
+  date: number;
 
   @ApiProperty({ type: DailyDiet })
   @Prop({ type: [DailyDietSchema], required: true })
