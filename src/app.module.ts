@@ -7,10 +7,13 @@ import { AuthModule } from './auth/auth.module';
 import { DailyModule } from './daily/daily.module';
 import { ExerciseModule } from './exercise/exercise.module';
 import { CustomizedExerciseModule } from './customized-exercise/customized-exercise.module';
+import { CommandModule } from 'nestjs-command';
+import { ExerciseCommand } from './exercise/exercise.command';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ envFilePath: '.env.dev', isGlobal: true }),
+    CommandModule,
+    ConfigModule.forRoot({ envFilePath: '.env.development', isGlobal: true }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (config: ConfigService) => ({
@@ -25,6 +28,6 @@ import { CustomizedExerciseModule } from './customized-exercise/customized-exerc
     CustomizedExerciseModule,
   ],
   controllers: [AppController],
-  providers: [],
+  providers: [ExerciseCommand],
 })
 export class AppModule {}

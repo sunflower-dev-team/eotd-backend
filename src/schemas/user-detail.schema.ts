@@ -10,14 +10,14 @@ export class UserDetail {
     description: '이메일',
     example: 'example.naver.com',
   })
-  @Prop({ required: true, unique: true })
+  @Prop({ unique: true, required: true })
   e_mail: string;
 
   @ApiProperty({
     description: '닉네임',
     example: '나는헬창',
   })
-  @Prop({ required: true, unique: true })
+  @Prop({ unique: true, required: true })
   nickname: string;
 
   @ApiProperty({

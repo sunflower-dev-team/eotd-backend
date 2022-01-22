@@ -10,14 +10,14 @@ export class Exercise {
     description: '운동 이름',
     example: '벤치프레스',
   })
-  @Prop({ required: true, unique: true })
+  @Prop({ unique: true, required: true })
   exercise_name: string;
 
   @ApiProperty({
     description: '운동 부위',
     example: '가슴',
   })
-  @Prop({ required: true, index: true })
+  @Prop({ index: true, required: true })
   target: string;
 
   @ApiProperty({
