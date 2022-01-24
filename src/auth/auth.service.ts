@@ -7,12 +7,11 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from 'src/schemas/user.schema';
-import * as bcrypt from 'bcrypt';
 import * as uuid from 'uuid';
 import { VerifyAuthMailTokenDto } from 'src/auth/dto/verify-auth-mail-token.dto';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
-import { UserInfo } from 'src/users/interfaces/user-info.interface';
+import { UserInfo } from 'src/user/interfaces/user-info.interface';
 import {
   Certificate,
   CertificateDocument,
@@ -29,26 +28,8 @@ export class AuthService {
     private readonly config: ConfigService,
   ) {}
 
-  // user D
-
-  async deleteUser(e_mail: string): Promise<void> {
-    const previousUser = await this.userModel
-      .findOneAndDelete({ e_mail })
-      .catch(() => {
-        throw new InternalServerErrorException('User has not been deleted');
-      });
-    if (!previousUser) throw new NotFoundException('No exist user');
-    return;
-  }
-
-  // auth-mail-token
-
-  generateAuthMailToken(): string {
-    const authMailToken: string = uuid.v4();
-    return authMailToken;
-  }
-
-  async verifyAuthMailToken(dto: VerifyAuthMailTokenDto): Promise<boolean> {
+  // verify-auth-mail-token
+  async isVerifyAuthMailToken(dto: VerifyAuthMailTokenDto): Promise<boolean> {
     const { e_mail, authMailToken } = dto;
 
     const certificate: Certificate = await this.certificateModel
@@ -70,8 +51,7 @@ export class AuthService {
     return true;
   }
 
-  // certificate C
-
+  // C-certificate
   async createCertificate(
     e_mail: string,
     authMailToken: string,
@@ -89,8 +69,7 @@ export class AuthService {
     return;
   }
 
-  // certificate R
-
+  // R-certificate
   async findCertificate(e_mail: string): Promise<Certificate> {
     const certificate: Certificate = await this.certificateModel
       .findOne({
@@ -102,8 +81,7 @@ export class AuthService {
     return JSON.parse(JSON.stringify(certificate));
   }
 
-  // certificate U
-
+  // U-certificate
   async updateRefreshToken(
     e_mail: string,
     refreshToken: string,
@@ -119,8 +97,7 @@ export class AuthService {
     return;
   }
 
-  // certificate D
-
+  // D-certificate
   async deleteCertificate(e_mail: string): Promise<void> {
     const previousCertificate = await this.certificateModel
       .findOneAndDelete({ e_mail })
@@ -134,8 +111,7 @@ export class AuthService {
     return;
   }
 
-  // jwt
-
+  // C-RT
   generateRefreshTokenAndSecret(userInfo: UserInfo): {
     refreshToken: string;
     refreshSecret: string;
@@ -151,6 +127,7 @@ export class AuthService {
     return { refreshToken, refreshSecret };
   }
 
+  // C-AT
   generateAccessToken(payload: UserInfo): string {
     const JWT_ACCESS_SECRET = this.config.get('JWT_ACCESS_SECRET');
     const accessToken: string = this.jwtService.sign(payload, {
@@ -160,6 +137,7 @@ export class AuthService {
     return accessToken;
   }
 
+  // send-AT
   sendAccessToken(res: Response, token: string): void {
     res.cookie('accessToken', token, {
       httpOnly: true,
@@ -171,22 +149,18 @@ export class AuthService {
     return;
   }
 
+  // D-AT
   removeAccessToken(res: Response): void {
     res.clearCookie('accessToken');
     return;
   }
 
+  // verify-(JWT)
   verifyJwtToken(token: string, secret: string): JWTTokenData {
     try {
       return this.jwtService.verify(token, { secret });
     } catch {
       return null;
     }
-  }
-
-  // signin
-
-  validatePassword(plainPassword: string, encryptedPassword: string): boolean {
-    return bcrypt.compareSync(plainPassword, encryptedPassword);
   }
 }

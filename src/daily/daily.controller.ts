@@ -10,23 +10,6 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
-import { getCurrentDate } from 'src/functions';
-import { DailyDietInfo } from 'src/daily/interfaces/daily-diet-info.interface';
-import { DailyService } from './daily.service';
-import { CreateDailyDietDto } from './dto/create-daily-diet.dto';
-import { CreateDailyExerciseDto } from './dto/create-daily-exercise.dto';
-import {
-  UpdateDailyDietBodyDto,
-  UpdateDailyDietQueryDto,
-} from './dto/update-daily-diet.dto';
-import * as uuid from 'uuid';
-import { DailyExerciseInfo } from 'src/daily/interfaces/daily-exercise-info.interface';
-import {
-  UpdateDailyExerciseQueryDto,
-  UpdateDailyExerciseBodyDto,
-} from './dto/update-daily-exercise.dto';
-import { VerifyMailGuard } from 'src/auth/guards/verify-mail.guard';
 import {
   ApiTags,
   ApiOperation,
@@ -39,12 +22,32 @@ import {
   ApiCookieAuth,
 } from '@nestjs/swagger';
 import { api } from 'src/swagger';
+import { Request } from 'express';
+import { VerifyMailGuard } from 'src/auth/guards/verify-mail.guard';
+import { DailyService } from './daily.service';
+import { PublicService } from 'src/public.service';
+import { CreateDailyDietDto } from './dto/create-daily-diet.dto';
+import { CreateDailyExerciseDto } from './dto/create-daily-exercise.dto';
+import {
+  UpdateDailyDietBodyDto,
+  UpdateDailyDietQueryDto,
+} from './dto/update-daily-diet.dto';
+import {
+  UpdateDailyExerciseQueryDto,
+  UpdateDailyExerciseBodyDto,
+} from './dto/update-daily-exercise.dto';
 import { DeleteDailyDietOrExerciseDto } from './dto/delete-daily.dietOrExercise.dto';
+import { DailyDietInfo } from 'src/daily/interfaces/daily-diet-info.interface';
+import { DailyExerciseInfo } from 'src/daily/interfaces/daily-exercise-info.interface';
+import * as uuid from 'uuid';
 
 @Controller('daily')
 @ApiTags('데일리 API')
 export class DailyController {
-  constructor(private readonly dailyService: DailyService) {}
+  constructor(
+    private readonly dailyService: DailyService,
+    private readonly publicService: PublicService,
+  ) {}
 
   @Get('/')
   @ApiOperation({
@@ -101,10 +104,10 @@ export class DailyController {
     @Body() dto: CreateDailyDietDto,
   ): Promise<object> {
     const { e_mail }: any = req.user;
-    const date = getCurrentDate();
+    const date = this.publicService.getCurrentDate();
     const dietInfo: DailyDietInfo = { diet_id: uuid.v4(), ...dto };
 
-    await this.dailyService.findAndCreateDaliyForm(e_mail, date);
+    await this.dailyService.findOrCreateDaliyForm(e_mail, date);
     await this.dailyService.createDailyDiet(e_mail, date, dietInfo);
 
     return { message: 'success', data: null };
@@ -179,10 +182,10 @@ export class DailyController {
     @Body() dto: CreateDailyExerciseDto,
   ): Promise<object> {
     const { e_mail }: any = req.user;
-    const date: number = getCurrentDate();
+    const date: number = this.publicService.getCurrentDate();
     const exerciseInfo: DailyExerciseInfo = { exercise_id: uuid.v4(), ...dto };
 
-    await this.dailyService.findAndCreateDaliyForm(e_mail, date);
+    await this.dailyService.findOrCreateDaliyForm(e_mail, date);
     await this.dailyService.createDailyExercise(e_mail, date, exerciseInfo);
 
     return { message: 'success', data: null };

@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Daily } from 'src/schemas/daily.schema';
 import { Exercise } from 'src/schemas/exercise.schema';
 import { UserDetail } from 'src/schemas/user-detail.schema';
-import { UserInfo } from 'src/users/interfaces/user-info.interface';
+import { UserInfo } from 'src/user/interfaces/user-info.interface';
 
 class SuccessResponseDataNull {
   @ApiProperty({ example: 'success' })
@@ -52,6 +52,14 @@ class SuccessResponseDataExercise {
   data: Exercise;
 }
 
+class SuccessResponseDataExercises {
+  @ApiProperty({ example: 'success' })
+  message: string;
+
+  @ApiProperty({ type: [Exercise] })
+  data: Exercise[];
+}
+
 export const api = {
   success: {
     nulldata: {
@@ -77,6 +85,10 @@ export const api = {
     exercise: {
       description: 'success',
       type: SuccessResponseDataExercise,
+    },
+    exercises: {
+      description: 'success',
+      type: SuccessResponseDataExercises,
     },
   },
   badRequest: {

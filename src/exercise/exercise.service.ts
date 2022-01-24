@@ -15,8 +15,7 @@ export class ExerciseService {
     @InjectModel(Exercise.name) private exerciseModel: Model<ExerciseDocument>,
   ) {}
 
-  // C
-
+  // C-exercise
   async createExercise(
     exerciseInfo: CreateExerciseDto | CreateExerciseDto[],
   ): Promise<void> {
@@ -32,8 +31,7 @@ export class ExerciseService {
     return;
   }
 
-  // R
-
+  // R-exercise
   async findAllExercise(): Promise<Exercise[]> {
     const exerciseList: Exercise[] = await this.exerciseModel
       .find()
@@ -60,8 +58,7 @@ export class ExerciseService {
     return exerciseInfo;
   }
 
-  // U
-
+  // U-exercise
   async updateOneExercise(
     exercise_name: string,
     exerciseInfo: UpdateExerciseDto,
@@ -77,8 +74,7 @@ export class ExerciseService {
     return;
   }
 
-  // D
-
+  // D-exercise
   async deleteOneExercise(exercise_name: string): Promise<void> {
     const previousExercise: Exercise = await this.exerciseModel
       .findOneAndDelete({

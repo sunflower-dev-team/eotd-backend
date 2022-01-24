@@ -4,15 +4,18 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JWTTokenData } from 'src/auth/interfaces/jwt-token-data.interface';
-import { translateToResData } from 'src/functions';
-import { UserInfo } from 'src/users/interfaces/user-info.interface';
+import { PublicService } from 'src/public.service';
+import { UserInfo } from 'src/user/interfaces/user-info.interface';
 
 @Injectable()
 export class JWTAccessStrategy extends PassportStrategy(
   Strategy,
   'jwt-access',
 ) {
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly publicService: PublicService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: Request) => {
@@ -32,6 +35,6 @@ export class JWTAccessStrategy extends PassportStrategy(
   }
 
   async validate(payload: JWTTokenData): Promise<UserInfo> {
-    return translateToResData(payload);
+    return this.publicService.translateToResUserInfo(payload);
   }
 }

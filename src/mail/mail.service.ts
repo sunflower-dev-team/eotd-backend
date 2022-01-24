@@ -1,6 +1,7 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as uuid from 'uuid';
 
 @Injectable()
 export class MailService {
@@ -8,6 +9,11 @@ export class MailService {
     private mailerService: MailerService,
     private config: ConfigService,
   ) {}
+
+  generateAuthMailToken(): string {
+    const authMailToken: string = uuid.v4();
+    return authMailToken;
+  }
 
   async sendAuthMailToken(
     e_mail: string,
