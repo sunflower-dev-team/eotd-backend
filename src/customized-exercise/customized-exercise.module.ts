@@ -15,5 +15,6 @@ import {
   ],
   providers: [CustomizedExerciseService],
   controllers: [CustomizedExerciseController],
+  exports: [CustomizedExerciseService],
 })
 export class CustomizedExerciseModule {}

@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { getCurrentDate } from 'src/functions';
 import { DailyDiet, DailyDietSchema } from './daily-diet.schema';
 import { DailyExercise, DailyExerciseSchema } from './daily-exercise.schema';
 import { ApiProperty } from '@nestjs/swagger';
@@ -14,7 +13,7 @@ export class Daily {
   e_mail: string;
 
   @ApiProperty({ description: '날짜', example: 20220113 })
-  @Prop({ required: true, default: getCurrentDate() })
+  @Prop({ required: true })
   date: number;
 
   @ApiProperty({ type: DailyDiet })

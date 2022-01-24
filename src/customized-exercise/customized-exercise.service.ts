@@ -20,14 +20,26 @@ export class CustomizedExerciseService {
     private customizedExerciseModel: Model<CustomizedExerciseDocument>,
   ) {}
 
-  // C
+  // C-customized-exercise
+  async createCustomizedExerciseForm(e_mail: string): Promise<void> {
+    await this.customizedExerciseModel.create({ e_mail }).catch(() => {
+      throw new InternalServerErrorException(
+        'Customized-Exercise-document has not been created',
+      );
+    });
+    return;
+  }
 
   async createExercise(
     e_mail: string,
     exerciseInfo: CreateExerciseDto,
   ): Promise<void> {
     await this.customizedExerciseModel
-      .create({ e_mail, ...exerciseInfo })
+      .findOneAndUpdate(
+        { e_mail },
+        { $push: { exercise_list: exerciseInfo } },
+        { runValidators: true },
+      )
       .catch(() => {
         throw new InternalServerErrorException(
           `${exerciseInfo.exercise_name} has not been created`,
@@ -36,68 +48,54 @@ export class CustomizedExerciseService {
     return;
   }
 
-  // R
+  // R-customized-exercise
+  async findOneOrAllExercise(
+    e_mail: string,
+    exercise_name: string | null,
+  ): Promise<Exercise | Exercise[]> {
+    const userCustomized: CustomizedExercise =
+      await this.customizedExerciseModel
+        .findOne({ e_mail })
+        .select({ _id: 0, 'exercise_list._id': 0 });
 
-  async findAllExercise(e_mail: string): Promise<Exercise[]> {
-    const exerciseList: Exercise[] = await this.customizedExerciseModel
-      .find({ e_mail })
-      .select({ _id: 0, e_mail: 0 });
-
-    if (!exerciseList.length)
+    if (!userCustomized.exercise_list.length)
       throw new NotFoundException('No exist customized-exercises');
-    return exerciseList;
-  }
+    else if (!exercise_name) return userCustomized.exercise_list;
 
-  async findAllExerciseByTarget(
-    e_mail: string,
-    target: string,
-  ): Promise<Exercise[]> {
-    const exerciseList: Exercise[] = await this.customizedExerciseModel
-      .find({
-        e_mail,
-        target,
-      })
-      .select({ _id: 0, e_mail: 0 });
+    const exerciseInfo = userCustomized.exercise_list.filter(
+      (info) => info.exercise_name === exercise_name,
+    )[0];
 
-    if (!exerciseList.length)
-      throw new NotFoundException(`No exist customized-exercises:${target}`);
-    return exerciseList;
-  }
-
-  async findOneExerciseByName(
-    e_mail: string,
-    exercise_name: string,
-  ): Promise<Exercise> {
-    const exerciseInfo: Exercise = await this.customizedExerciseModel
-      .findOne({ e_mail, exercise_name })
-      .select({ _id: 0, e_mail: 0 });
-
-    if (!exerciseInfo)
-      throw new NotFoundException(
-        `No exist customized-exercise:${exercise_name}`,
-      );
+    if (!exerciseInfo) throw new NotFoundException(`No exist ${exercise_name}`);
     return exerciseInfo;
   }
 
-  // U
-
+  // U-customized-exercise
   async updateOneExercise(
     e_mail: string,
     exercise_name: string,
     exerciseInfo: UpdateExerciseDto,
   ): Promise<void> {
-    const previousExercise: Exercise = await this.customizedExerciseModel
-      .findOneAndUpdate(
-        {
-          e_mail,
-          exercise_name,
-        },
-        exerciseInfo,
-      )
-      .select({ _id: 0, e_mail: 0 })
-      .catch(() => {
-        throw new InternalServerErrorException('Exercise has not been updated');
-      });
+    const setForm: object = {};
+
+    for (const key in exerciseInfo)
+      setForm[`exercise_list.$.${key}`] = exerciseInfo[key];
+
+    const previousExercise: CustomizedExercise =
+      await this.customizedExerciseModel
+        .findOneAndUpdate(
+          {
+            e_mail,
+            'exercise_list.exercise_name': exercise_name,
+          },
+          { $set: setForm },
+        )
+        .select({ _id: 0 })
+        .catch(() => {
+          throw new InternalServerErrorException(
+            'Customized-Exercise has not been updated',
+          );
+        });
     if (!previousExercise)
       throw new NotFoundException(
         `No exist customized-exercise:${exercise_name}`,
@@ -105,21 +103,36 @@ export class CustomizedExerciseService {
     return;
   }
 
-  // D
+  // D-customized-exercise
+  async deleteAllExercise(e_mail: string): Promise<void> {
+    await this.customizedExerciseModel
+      .findOneAndUpdate({ e_mail }, { exercise_list: [] })
+      .catch(() => {
+        throw new InternalServerErrorException(
+          'Exercises has not been deleted',
+        );
+      });
+    return;
+  }
 
   async deleteOneExercise(
     e_mail: string,
     exercise_name: string,
   ): Promise<void> {
-    const previousExercise: Exercise = await this.customizedExerciseModel
-      .findOneAndDelete({
-        e_mail,
-        exercise_name,
-      })
-      .select({ _id: 0, e_mail: 0 })
-      .catch(() => {
-        throw new InternalServerErrorException('Exercise has not been deleted');
-      });
+    const previousExercise: CustomizedExercise =
+      await this.customizedExerciseModel
+        .findOneAndUpdate(
+          {
+            e_mail,
+          },
+          { $pull: { exercise_list: { exercise_name } } },
+        )
+        .select({ _id: 0 })
+        .catch(() => {
+          throw new InternalServerErrorException(
+            'Customized-Exercise has not been deleted',
+          );
+        });
     if (!previousExercise)
       throw new NotFoundException(
         `No exist customized-exercise:${exercise_name}`,

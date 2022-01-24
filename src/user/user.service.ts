@@ -6,24 +6,23 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from 'src/schemas/user.schema';
-import { Model } from 'mongoose';
 import { UserDetail, UserDetailDocument } from 'src/schemas/user-detail.schema';
+import { Model } from 'mongoose';
 import { UpdateUserDetailDto } from './dto/update-user-detail.dto';
 import { CreateUserDetailDto } from './dto/create-user-detail.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
-import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
-export class UsersService {
+export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(UserDetail.name)
     private userDetailModel: Model<UserDetailDocument>,
   ) {}
 
-  // user C
-
+  // C-user
   async createUser(userInfo: CreateUserDto): Promise<void> {
     const salt: string = bcrypt.genSaltSync();
     const password: string = bcrypt.hashSync(userInfo.password, salt);
@@ -39,41 +38,36 @@ export class UsersService {
     return;
   }
 
-  // user R
-
-  async findUser(e_mail: string): Promise<User> {
-    const user: User | null = await this.userModel
-      .findOne({ e_mail })
-      .select({ _id: 0 });
-
-    if (!user) throw new NotFoundException('No exist user');
-    return JSON.parse(JSON.stringify(user));
-  }
-
-  // user U
-
-  async updateUser(e_mail: string, userInfo: UpdateUserDto) {
+  // U-user
+  async updateUser(e_mail: string, userInfo: UpdateUserDto): Promise<User> {
     if (userInfo.password) {
       const salt: string = bcrypt.genSaltSync();
       const password: string = bcrypt.hashSync(userInfo.password, salt);
       userInfo.password = password;
     }
-    const previousUserInfo = await this.userModel
-      .findOneAndUpdate({ e_mail }, userInfo)
+    const updatedUser = await this.userModel
+      .findOneAndUpdate({ e_mail }, userInfo, { new: true })
       .catch(() => {
         throw new InternalServerErrorException(
           'User-info has not been updated',
         );
       });
 
-    if (!previousUserInfo) throw new NotFoundException('No exist user');
+    return updatedUser;
+  }
+
+  // D-user
+  async deleteUser(e_mail: string): Promise<void> {
+    const previousUser = await this.userModel
+      .findOneAndDelete({ e_mail })
+      .catch(() => {
+        throw new InternalServerErrorException('User has not been deleted');
+      });
+    if (!previousUser) throw new NotFoundException('No exist user');
     return;
   }
 
-  // func
-
-  // detail C
-
+  // C-detail
   async createUserDetail(
     e_mail: string,
     detailInfo: CreateUserDetailDto,
@@ -88,9 +82,8 @@ export class UsersService {
     return;
   }
 
-  // detail R
-
-  async findOneUserDetail(e_mail: string): Promise<UserDetail> {
+  // R-detail
+  async findUserDetail(e_mail: string): Promise<UserDetail> {
     const detailInfo: UserDetail = await this.userDetailModel
       .findOne({ e_mail })
       .select({ _id: 0 });
@@ -99,9 +92,8 @@ export class UsersService {
     return detailInfo;
   }
 
-  // detail U
-
-  async updateOneUserDetail(
+  // U-detail
+  async updateUserDetail(
     e_mail: string,
     detailInfo: UpdateUserDetailDto,
   ): Promise<void> {
@@ -118,9 +110,8 @@ export class UsersService {
     return;
   }
 
-  // detail D
-
-  async deleteOneUserDetail(e_mail: string): Promise<void> {
+  // D-detail
+  async deleteUserDetail(e_mail: string): Promise<void> {
     const previousDetail = await this.userDetailModel
       .findOneAndDelete({
         e_mail,

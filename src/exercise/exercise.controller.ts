@@ -84,7 +84,6 @@ export class ExerciseController {
       await this.exerciseService.createExercise(dto);
       return { message: 'success', data: null };
     }
-
     throw new ConflictException(`Existing exercise:${dto.exercise_name}`);
   }
 
@@ -99,7 +98,7 @@ export class ExerciseController {
     description: '운동 이름',
     example: '벤치프레스',
   })
-  @ApiCreatedResponse(api.success.nulldata)
+  @ApiOkResponse(api.success.nulldata)
   @ApiBadRequestResponse(api.badRequest)
   @ApiUnauthorizedResponse(api.unauthorized.token)
   @ApiForbiddenResponse(api.forbidden.admin)
@@ -124,7 +123,7 @@ export class ExerciseController {
     description: '운동 이름',
     example: '벤치프레스',
   })
-  @ApiCreatedResponse(api.success.nulldata)
+  @ApiOkResponse(api.success.nulldata)
   @ApiUnauthorizedResponse(api.unauthorized.token)
   @ApiForbiddenResponse(api.forbidden.admin)
   @ApiNotFoundResponse(api.notFound.exercise)

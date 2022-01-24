@@ -1,8 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
-  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -15,24 +13,16 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
-import { SigninUserDto } from 'src/auth/dto/signin-user.dto';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { VerifyAuthMailTokenDto } from 'src/auth/dto/verify-auth-mail-token.dto';
-import { DailyService } from 'src/daily/daily.service';
-import { translateToResData } from 'src/functions';
-import { MailService } from 'src/mail/mail.service';
-import { UsersService } from 'src/users/users.service';
 import { AuthService } from './auth.service';
 import { ValidatePasswordDto } from './dto/validate-password.dto';
 import { VerifyMailGuard } from './guards/verify-mail.guard';
 import {
   ApiTags,
   ApiOperation,
-  ApiCreatedResponse,
   ApiOkResponse,
   ApiNotFoundResponse,
   ApiUnauthorizedResponse,
-  ApiConflictResponse,
   ApiDefaultResponse,
   ApiForbiddenResponse,
   ApiCookieAuth,
@@ -40,16 +30,17 @@ import {
 } from '@nestjs/swagger';
 import { api } from 'src/swagger';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
+import { PublicService } from 'src/public.service';
+import { CustomizedExerciseService } from 'src/customized-exercise/customized-exercise.service';
 
 @Controller('auth')
 @ApiTags('인증 API')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly mailService: MailService,
-    private readonly usersService: UsersService,
-    private readonly dailyService: DailyService,
+    private readonly customizedExerciseService: CustomizedExerciseService,
     private readonly config: ConfigService,
+    private readonly publicService: PublicService,
   ) {}
 
   @Get('/mail')
@@ -68,13 +59,13 @@ export class AuthController {
     @Query() dto: VerifyAuthMailTokenDto,
     @Res() res: Response,
   ): Promise<void> {
-    const user = await this.usersService.findUser(dto.e_mail);
-    const userInfo = translateToResData(user);
+    const user = await this.publicService.findUser(dto.e_mail);
+    const userInfo = this.publicService.translateToResUserInfo(user);
     let isVerifyMail: boolean;
 
     userInfo.isVerifyMailToken
       ? (isVerifyMail = false)
-      : (isVerifyMail = await this.authService.verifyAuthMailToken(dto));
+      : (isVerifyMail = await this.authService.isVerifyAuthMailToken(dto));
 
     if (!isVerifyMail) return res.redirect(this.config.get('FAILED_URL'));
 
@@ -86,6 +77,10 @@ export class AuthController {
       dto.e_mail,
       refreshToken,
       refreshSecret,
+    );
+
+    await this.customizedExerciseService.createCustomizedExerciseForm(
+      dto.e_mail,
     );
 
     return res.redirect(this.config.get('SUCCESS_URL'));
@@ -114,8 +109,8 @@ export class AuthController {
     );
 
     if (!tokenData) {
-      const user = await this.usersService.findUser(e_mail);
-      const userInfo = translateToResData(user);
+      const user = await this.publicService.findUser(e_mail);
+      const userInfo = this.publicService.translateToResUserInfo(user);
       const { refreshToken, refreshSecret } =
         this.authService.generateRefreshTokenAndSecret(userInfo);
 
@@ -126,28 +121,12 @@ export class AuthController {
       );
       accessToken = this.authService.generateAccessToken(userInfo);
     } else {
-      const userInfo = translateToResData(tokenData);
+      const userInfo = this.publicService.translateToResUserInfo(tokenData);
       accessToken = this.authService.generateAccessToken(userInfo);
     }
     this.authService.removeAccessToken(res);
     this.authService.sendAccessToken(res, accessToken);
 
-    return res.send({ message: 'success', data: null });
-  }
-
-  @Get('/signout')
-  @ApiOperation({
-    summary: '로그아웃',
-    description: `로그아웃을 위한 API입니다.
-    \n응답 성공시 accessToken이 쿠키에서 제거됩니다.`,
-  })
-  @ApiCookieAuth()
-  @ApiOkResponse(api.success.nulldata)
-  @ApiUnauthorizedResponse(api.unauthorized.token)
-  @ApiForbiddenResponse(api.forbidden.mail)
-  @UseGuards(VerifyMailGuard)
-  signOut(@Res() res: Response): object {
-    this.authService.removeAccessToken(res);
     return res.send({ message: 'success', data: null });
   }
 
@@ -170,99 +149,10 @@ export class AuthController {
     @Body() dto: ValidatePasswordDto,
   ): Promise<object> {
     const { e_mail }: any = req.user;
-    const user = await this.usersService.findUser(e_mail);
-    const isSamePassword = this.authService.validatePassword(
-      dto.password,
-      user.password,
-    );
+    const user = await this.publicService.findUser(e_mail);
 
-    if (!isSamePassword)
+    if (!this.publicService.isSamePassword(dto.password, user.password))
       throw new UnauthorizedException(`The password doesn't match`);
     return { message: 'success', data: null };
-  }
-
-  @Post('/signup')
-  @ApiOperation({
-    summary: '회원가입',
-    description: `회원가입을 위한 API입니다.
-    \n유저가 가입되는 동시에 가입시 기입한 이메일로 인증메일이 발송 됩니다.`,
-  })
-  @ApiCreatedResponse(api.success.nulldata)
-  @ApiBadRequestResponse(api.badRequest)
-  @ApiConflictResponse(api.conflict.e_mail)
-  async signUp(@Body() dto: CreateUserDto): Promise<object> {
-    const authMailToken = this.authService.generateAuthMailToken();
-
-    await this.usersService.createUser(dto);
-    await this.authService.createCertificate(dto.e_mail, authMailToken);
-    await this.mailService.sendAuthMailToken(dto.e_mail, authMailToken);
-
-    return { message: 'success', data: null };
-  }
-
-  @Post('/signin')
-  @ApiOperation({
-    summary: '로그인',
-    description: `로그인을 위한 API입니다.
-    \n응답 성공시 accessToken이 쿠키에 담깁니다.`,
-  })
-  @ApiOkResponse(api.success.user)
-  @ApiBadRequestResponse(api.badRequest)
-  @ApiUnauthorizedResponse(api.unauthorized.password)
-  @ApiForbiddenResponse(api.forbidden.mail)
-  @ApiNotFoundResponse(api.notFound.user)
-  @HttpCode(HttpStatus.OK)
-  async signIn(
-    @Body() dto: SigninUserDto,
-    @Res() res: Response,
-  ): Promise<object> {
-    const user = await this.usersService.findUser(dto.e_mail);
-    if (!user.isVerifyMailToken)
-      throw new ForbiddenException('You must authenticate mail');
-    else if (!this.authService.validatePassword(dto.password, user.password))
-      throw new UnauthorizedException(`The password doesn't match`);
-
-    const userInfo = translateToResData(user);
-    const accessToken = this.authService.generateAccessToken(userInfo);
-    this.authService.sendAccessToken(res, accessToken);
-
-    return res.send({ message: 'success', data: userInfo });
-  }
-
-  @Delete('/withdrawal')
-  @ApiOperation({
-    summary: '회원탈퇴',
-    description: `회원탈퇴를 위한 API입니다.
-    \n응답 성공시 accessToken이 쿠키에서 제거되며, 유저의 정보가 삭제됩니다.`,
-  })
-  @ApiCookieAuth()
-  @ApiOkResponse(api.success.nulldata)
-  @ApiUnauthorizedResponse(api.unauthorized.token)
-  @ApiForbiddenResponse(api.forbidden.mail)
-  @ApiNotFoundResponse(api.notFound.user)
-  @UseGuards(VerifyMailGuard)
-  async deleteUser(@Req() req: Request, @Res() res: Response): Promise<object> {
-    const { e_mail }: any = req.user;
-    await this.usersService.findUser(e_mail);
-
-    await Promise.all([
-      this.authService.deleteUser(e_mail),
-      this.authService.deleteCertificate(e_mail),
-      this.usersService.deleteOneUserDetail(e_mail).catch(() => {
-        return;
-      }),
-      this.dailyService.deleteDaily(e_mail),
-    ]);
-    this.authService.removeAccessToken(res);
-
-    return res.send({ message: 'success', data: null });
-  }
-
-  @Get('/oauth')
-  @ApiCookieAuth()
-  @UseGuards(VerifyMailGuard)
-  oauth(@Req() req: Request) {
-    console.log(req);
-    return;
   }
 }
