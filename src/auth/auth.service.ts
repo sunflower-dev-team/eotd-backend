@@ -17,6 +17,7 @@ import {
   CertificateDocument,
 } from 'src/schemas/certificate.schema';
 import { JWTTokenData } from 'src/auth/interfaces/jwt-token-data.interface';
+import * as bcyrpt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -49,6 +50,20 @@ export class AuthService {
         );
       });
     return true;
+  }
+
+  // C-temporary password
+  async getTemporaryPassword(
+    e_mail: string,
+  ): Promise<{ temporaryPassword: string; user: User }> {
+    const salt = bcyrpt.genSaltSync(2);
+    const temporaryPassword: string = '!' + uuid.v1().slice(0, 8);
+    const user: User = await this.userModel.findOneAndUpdate(
+      { e_mail },
+      { password: bcyrpt.hashSync(temporaryPassword, salt) },
+      { new: true },
+    );
+    return { temporaryPassword, user };
   }
 
   // C-certificate
@@ -89,6 +104,20 @@ export class AuthService {
   ): Promise<void> {
     await this.certificateModel
       .updateOne({ e_mail }, { refreshToken, refreshSecret })
+      .catch(() => {
+        throw new InternalServerErrorException(
+          'No authentication model has been updated',
+        );
+      });
+    return;
+  }
+
+  async updateAuthMailToken(
+    e_mail: string,
+    authMailToken: string,
+  ): Promise<void> {
+    await this.certificateModel
+      .updateOne({ e_mail }, { authMailToken })
       .catch(() => {
         throw new InternalServerErrorException(
           'No authentication model has been updated',

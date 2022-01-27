@@ -15,19 +15,42 @@ export class MailService {
     return authMailToken;
   }
 
-  async sendAuthMailToken(
+  async sendAuthMailTokenForSignup(
     e_mail: string,
     authMailToken: string,
   ): Promise<void> {
     const ROOT_URL = this.config.get('ROOT_URL');
     const PORT = this.config.get('PORT');
-    const url = `${ROOT_URL}:${PORT}/auth/mail?e_mail=${e_mail}&authMailToken=${authMailToken}`;
+    const url = `${ROOT_URL}:${PORT}/auth/mail-signup?e_mail=${e_mail}&authMailToken=${authMailToken}`;
 
     await this.mailerService
       .sendMail({
         to: e_mail,
         subject: '[EOTD] 회원가입 안내',
-        template: './confirmation',
+        template: './signup',
+        context: {
+          url,
+        },
+      })
+      .catch(() => {
+        throw new InternalServerErrorException('The mail has not been sent');
+      });
+    return;
+  }
+
+  async sendAuthMailTokenForFindPassword(
+    e_mail: string,
+    authMailToken: string,
+  ): Promise<void> {
+    const ROOT_URL = this.config.get('ROOT_URL');
+    const PORT = this.config.get('PORT');
+    const url = `${ROOT_URL}:${PORT}/auth/mail-password?e_mail=${e_mail}&authMailToken=${authMailToken}`;
+
+    await this.mailerService
+      .sendMail({
+        to: e_mail,
+        subject: '[EOTD] 비밀번호 찾기 안내',
+        template: './find-password',
         context: {
           url,
         },

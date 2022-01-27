@@ -43,9 +43,9 @@ export class AuthController {
     private readonly publicService: PublicService,
   ) {}
 
-  @Get('/mail')
+  @Get('/mail-signup')
   @ApiOperation({
-    summary: '메일 인증',
+    summary: '회원가입 메일 인증 [클라이언트 접근 X]',
     description: `회원가입 후 인증메일이 전송되었을 때, 유저의 메일에서 인증버튼을 누를시 유효성검사를 진행하는 API입니다.`,
   })
   @ApiDefaultResponse({
@@ -55,7 +55,7 @@ export class AuthController {
     `,
   })
   @ApiBadRequestResponse(api.badRequest)
-  async verifyAuthMailToken(
+  async verifySignupMailToken(
     @Query() dto: VerifyAuthMailTokenDto,
     @Res() res: Response,
   ): Promise<void> {
@@ -83,7 +83,46 @@ export class AuthController {
       dto.e_mail,
     );
 
-    return res.redirect(this.config.get('SUCCESS_URL'));
+    return res.redirect(this.config.get('SUCCESS_SIGNUP_URL'));
+  }
+
+  @Get('/mail-password')
+  @ApiOperation({
+    summary: '비밀번호 찾기 메일 인증 [클라이언트 접근 X]',
+    description: `비밀번호 찾기 인증메일이 전송되었을 때
+    \n유저의 메일에서 "임시 비밀번호 발급받기" 버튼을 누를시 유효성검사를 진행하는 API입니다.`,
+  })
+  @ApiDefaultResponse({
+    description: `
+    \n인증시 성공페이지(임시 비밀번호 재발급 페이지)로 리다이렉트합니다.
+    \n실패시 실패페이지(유효하지 않은 페이지입니다)로 리다이렉트합니다.
+    `,
+  })
+  @ApiBadRequestResponse(api.badRequest)
+  async verifyPasswordMailToken(
+    @Query() dto: VerifyAuthMailTokenDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const isVerifyMail: boolean = await this.authService.isVerifyAuthMailToken(
+      dto,
+    );
+
+    if (!isVerifyMail) return res.redirect(this.config.get('FAILED_URL'));
+
+    const { temporaryPassword, user } =
+      await this.authService.getTemporaryPassword(dto.e_mail);
+    const userInfo = this.publicService.translateToResUserInfo(user);
+    const { refreshToken, refreshSecret } =
+      this.authService.generateRefreshTokenAndSecret(userInfo);
+    await this.authService.updateRefreshToken(
+      dto.e_mail,
+      refreshToken,
+      refreshSecret,
+    );
+
+    return res.redirect(
+      this.config.get('SUCCESS_PASSWORD_URL') + '/' + temporaryPassword,
+    );
   }
 
   @Get('/refresh')

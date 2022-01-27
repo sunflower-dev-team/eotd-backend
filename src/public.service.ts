@@ -35,7 +35,7 @@ export class PublicService {
     return Number(year + month + day);
   }
 
-  translateToResUserInfo(userInfo: User | JWTTokenData): UserInfo {
+  translateToResUserInfo(user: User | JWTTokenData): UserInfo {
     const {
       e_mail,
       name,
@@ -44,7 +44,7 @@ export class PublicService {
       isVerifyMailToken,
       kakao_oauth,
       admin,
-    } = userInfo;
+    } = user;
 
     return {
       e_mail,
