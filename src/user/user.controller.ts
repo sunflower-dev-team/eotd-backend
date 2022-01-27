@@ -65,7 +65,10 @@ export class UserController {
     const authMailToken = this.mailService.generateAuthMailToken();
     await this.userService.createUser(dto);
     await this.authService.createCertificate(dto.e_mail, authMailToken);
-    await this.mailService.sendAuthMailToken(dto.e_mail, authMailToken);
+    await this.mailService.sendAuthMailTokenForSignup(
+      dto.e_mail,
+      authMailToken,
+    );
 
     return { message: 'success', data: null };
   }
@@ -118,7 +121,7 @@ export class UserController {
   @Patch('/info')
   @ApiOperation({
     summary:
-      '유저의 정보 수정 - [비밀번호 수정 시 인증 API의 패스워드 일치 확인을 해야합니다]',
+      '유저의 정보 수정 - [유저의 정보 수정하기 전에 인증 API의 패스워드 일치 확인을 해야합니다]',
     description: `유저의 정보를 수정하는 API입니다.`,
   })
   @ApiCookieAuth()
@@ -231,6 +234,27 @@ export class UserController {
   ): Promise<object> {
     const { e_mail }: any = req.user;
     await this.userService.updateUserDetail(e_mail, dto);
+    return { message: 'success', data: null };
+  }
+
+  @Get('/help/password/:e_mail')
+  @ApiOperation({
+    summary: '비밀번호 찾기',
+    description: `유저의 이메일로 임시 비밀번호를 얻을 수 있는 링크를 전송하는 API입니다.`,
+  })
+  @ApiParam({ name: 'e_mail', description: '이메일', required: true })
+  @ApiOkResponse(api.success.nulldata)
+  @ApiNotFoundResponse(api.notFound.user)
+  async findPassword(@Param('e_mail') e_mail: string): Promise<object> {
+    await this.publicService.findUser(e_mail);
+    const authMailToken = this.mailService.generateAuthMailToken();
+
+    await this.authService.updateAuthMailToken(e_mail, authMailToken);
+    await this.mailService.sendAuthMailTokenForFindPassword(
+      e_mail,
+      authMailToken,
+    );
+
     return { message: 'success', data: null };
   }
 

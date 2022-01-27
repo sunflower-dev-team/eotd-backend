@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 
 @Controller('')
 export class AppController {
@@ -7,9 +7,14 @@ export class AppController {
     return 'Welcome EOTD API';
   }
 
-  @Get('/success')
-  success() {
+  @Get('/success/signup')
+  successSignup() {
     return 'success';
+  }
+
+  @Get('/success/password/:password')
+  successPassword(@Param('password') password: string) {
+    return password;
   }
 
   @Get('/failed')
