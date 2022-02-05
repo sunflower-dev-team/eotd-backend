@@ -19,6 +19,15 @@ export class PublicService {
     return JSON.parse(JSON.stringify(user));
   }
 
+  async findUserByKakaoId(kakao_id: number): Promise<User> {
+    const user: User | null = await this.userModel
+      .findOne({ kakao_id })
+      .select({ _id: 0 });
+
+    if (!user) return null;
+    return JSON.parse(JSON.stringify(user));
+  }
+
   isSamePassword(plainPassword: string, encryptedPassword: string): boolean {
     return bcrypt.compareSync(plainPassword, encryptedPassword);
   }
@@ -36,24 +45,19 @@ export class PublicService {
   }
 
   translateToResUserInfo(user: User | JWTTokenData): UserInfo {
-    const {
-      e_mail,
-      name,
-      gender,
-      birth,
-      isVerifyMailToken,
-      kakao_oauth,
-      admin,
-    } = user;
+    const { e_mail, name, gender, birth, isAuthorized, kakao_id, admin } = user;
 
-    return {
+    const userInfo: UserInfo = {
       e_mail,
       name,
       gender,
       birth,
-      isVerifyMailToken,
-      kakao_oauth,
+      isAuthorized,
       admin,
     };
+
+    if (kakao_id) userInfo.kakao_id = user.kakao_id;
+
+    return userInfo;
   }
 }

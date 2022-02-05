@@ -9,6 +9,7 @@ import { ExerciseModule } from './exercise/exercise.module';
 import { CustomizedExerciseModule } from './customized-exercise/customized-exercise.module';
 import { CommandModule } from 'nestjs-command';
 import { ExerciseCommand } from './exercise/exercise.command';
+import { OauthModule } from './oauth/oauth.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ExerciseCommand } from './exercise/exercise.command';
     DailyModule,
     ExerciseModule,
     CustomizedExerciseModule,
+    OauthModule,
   ],
   controllers: [AppController],
   providers: [ExerciseCommand],

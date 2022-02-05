@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { KakaoSigninFailure } from 'src/oauth/interfaces/kakao-signin-failure.interface';
 import { Daily } from 'src/schemas/daily.schema';
 import { Exercise } from 'src/schemas/exercise.schema';
 import { UserDetail } from 'src/schemas/user-detail.schema';
@@ -60,6 +61,14 @@ class SuccessResponseDataExercises {
   data: Exercise[];
 }
 
+class FailureResponseDataKakaoSignin {
+  @ApiProperty({ example: 'failure' })
+  message: string;
+
+  @ApiProperty({ type: KakaoSigninFailure })
+  data: KakaoSigninFailure;
+}
+
 export const api = {
   success: {
     nulldata: {
@@ -89,6 +98,14 @@ export const api = {
     exercises: {
       description: 'success',
       type: SuccessResponseDataExercises,
+    },
+  },
+  failure: {
+    oauth: {
+      kakao: {
+        description: 'failure',
+        type: FailureResponseDataKakaoSignin,
+      },
     },
   },
   badRequest: {

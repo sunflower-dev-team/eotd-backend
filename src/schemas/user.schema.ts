@@ -13,6 +13,14 @@ export class User {
   @Prop({ unique: true, required: true })
   e_mail: string;
 
+  @ApiProperty({
+    description:
+      'kakao 유저 id, 회원가입을 카카오 소셜 로그인으로 진행했는지 확인할 수 있는 속성입니다.',
+    example: 51843215,
+  })
+  @Prop()
+  kakao_id: number;
+
   @ApiProperty({ description: '이름', example: '홍길동' })
   @Prop({ required: true })
   name: string;
@@ -26,7 +34,7 @@ export class User {
   birth: number;
 
   @ApiProperty({ description: '비밀번호', example: 'q1w2e3@@' })
-  @Prop({ required: true })
+  @Prop()
   password: string;
 
   @ApiProperty({
@@ -34,14 +42,7 @@ export class User {
     example: true,
   })
   @Prop({ required: true, default: false })
-  isVerifyMailToken: boolean;
-
-  @ApiProperty({
-    description: 'oauth 유저',
-    example: false,
-  })
-  @Prop({ required: true, default: false })
-  kakao_oauth: boolean;
+  isAuthorized: boolean;
 
   @ApiProperty({ description: '관리자 권한', example: false })
   @Prop({ required: true, default: false })

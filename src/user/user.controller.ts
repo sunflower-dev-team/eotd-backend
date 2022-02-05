@@ -61,7 +61,7 @@ export class UserController {
   @ApiCreatedResponse(api.success.nulldata)
   @ApiBadRequestResponse(api.badRequest)
   @ApiConflictResponse(api.conflict.e_mail)
-  async signUp(@Body() dto: CreateUserDto): Promise<object> {
+  async signup(@Body() dto: CreateUserDto): Promise<object> {
     const authMailToken = this.mailService.generateAuthMailToken();
     await this.userService.createUser(dto);
     await this.authService.createCertificate(dto.e_mail, authMailToken);
@@ -85,12 +85,12 @@ export class UserController {
   @ApiForbiddenResponse(api.forbidden.mail)
   @ApiNotFoundResponse(api.notFound.user)
   @HttpCode(HttpStatus.OK)
-  async signIn(
+  async signin(
     @Body() dto: SigninUserDto,
     @Res() res: Response,
   ): Promise<object> {
     const user = await this.publicService.findUser(dto.e_mail);
-    if (!user.isVerifyMailToken)
+    if (!user.isAuthorized)
       throw new ForbiddenException('You must authenticate mail');
     else if (!this.publicService.isSamePassword(dto.password, user.password))
       throw new UnauthorizedException(`The password doesn't match`);
@@ -121,7 +121,7 @@ export class UserController {
   @Patch('/info')
   @ApiOperation({
     summary:
-      '유저의 정보 수정 - [유저의 정보 수정하기 전에 인증 API의 패스워드 일치 확인을 해야합니다]',
+      '유저의 정보 수정 - [패스워드를 바꿀 경우에는 인증 API의 패스워드 일치 확인을 해야합니다]',
     description: `유저의 정보를 수정하는 API입니다.`,
   })
   @ApiCookieAuth()

@@ -43,10 +43,10 @@ export class AuthService {
       return false;
 
     await this.userModel
-      .updateOne({ e_mail }, { isVerifyMailToken: true })
+      .updateOne({ e_mail }, { isAuthorized: true })
       .catch(() => {
         throw new InternalServerErrorException(
-          'No isVerifyMailToken-field has been updated',
+          'No isAuthorized-field has been updated',
         );
       });
     return true;

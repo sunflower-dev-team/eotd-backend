@@ -63,13 +63,13 @@ export class AuthController {
     const userInfo = this.publicService.translateToResUserInfo(user);
     let isVerifyMail: boolean;
 
-    userInfo.isVerifyMailToken
+    userInfo.isAuthorized
       ? (isVerifyMail = false)
       : (isVerifyMail = await this.authService.isVerifyAuthMailToken(dto));
 
     if (!isVerifyMail) return res.redirect(this.config.get('FAILED_URL'));
 
-    userInfo.isVerifyMailToken = true;
+    userInfo.isAuthorized = true;
     const { refreshToken, refreshSecret } =
       this.authService.generateRefreshTokenAndSecret(userInfo);
 
@@ -171,7 +171,7 @@ export class AuthController {
 
   @Post('/password')
   @ApiOperation({
-    summary: '패스워드 일치 확인 - [비밀번호 변경, 회원탈퇴] 접근 시 인증',
+    summary: '패스워드 일치 확인 - [비밀번호 변경] 접근 시 인증',
     description: `비밀번호 변경 API 및 회원탈퇴 API에 접근하기 전 인증해야할 API입니다.
       \n입력한 비밀번호가 유저의 비밀번호와 일치하는지 확인합니다.`,
   })
