@@ -27,18 +27,25 @@ import { VerifyMailGuard } from 'src/auth/guards/verify-mail.guard';
 import { DailyService } from './daily.service';
 import { PublicService } from 'src/public.service';
 import { CreateDailyDietDto } from './dto/create-daily-diet.dto';
+import { CreateDailyRoutineDto } from './dto/create-daily-routine.dto';
 import { CreateDailyExerciseDto } from './dto/create-daily-exercise.dto';
+import { UpdateDailyDietBodyDto } from './dto/update-daily-diet.dto';
+import { UpdateDailyRoutineBodyDto } from './dto/update-daily-routine.dto';
+import { UpdateDailyExerciseBodyDto } from './dto/update-daily-exercise.dto';
 import {
-  UpdateDailyDietBodyDto,
-  UpdateDailyDietQueryDto,
-} from './dto/update-daily-diet.dto';
+  DeleteDailyRoutineQueryDto,
+  UpdateDailyRoutineQueryDto,
+} from './dto/query-daily-routine.dto';
 import {
+  DeleteDailyExerciseQueryDto,
   UpdateDailyExerciseQueryDto,
-  UpdateDailyExerciseBodyDto,
-} from './dto/update-daily-exercise.dto';
-import { DeleteDailyDietOrExerciseDto } from './dto/delete-daily.dietOrExercise.dto';
-import { DailyDietInfo } from 'src/daily/interfaces/daily-diet-info.interface';
-import { DailyExerciseInfo } from 'src/daily/interfaces/daily-exercise-info.interface';
+} from './dto/query-daily-exercise.dto';
+import {
+  DeleteDailyDietQueryDto,
+  UpdateDailyDietQueryDto,
+} from './dto/query-daily-diet.dto';
+import { DailyDiet } from 'src/schemas/daily-diet.schema';
+import { DailyRoutine } from 'src/schemas/daily-routine.schema';
 import * as uuid from 'uuid';
 
 @Controller('daily')
@@ -51,26 +58,26 @@ export class DailyController {
 
   @Get('/')
   @ApiOperation({
-    summary: '모든 날짜의 데일리 기록들 조회',
-    description: `접속한 유저가 기록해왔던 모든 날짜의 데일리 기록들을 조회하는 API입니다.`,
+    summary: '모든 날짜의 데일리 조회',
+    description: `모든 날짜의 데일리를 조회하는 API입니다.`,
   })
   @ApiCookieAuth()
-  @ApiOkResponse(api.success.dailyList)
+  @ApiOkResponse(api.success.dailys)
   @ApiUnauthorizedResponse(api.unauthorized.token)
   @ApiForbiddenResponse(api.forbidden.mail)
-  @ApiNotFoundResponse(api.notFound.dailyList)
+  @ApiNotFoundResponse(api.notFound.dailys)
   @UseGuards(VerifyMailGuard)
-  async findAllDaily(@Req() req: Request): Promise<object> {
-    const { e_mail }: any = req.user;
-    const dailyInfoList = await this.dailyService.findAllDaily(e_mail);
+  async findDailys(@Req() req: Request): Promise<object> {
+    const { _id }: any = req.user;
+    const dailys = await this.dailyService.findDailys(_id);
 
-    return { message: 'success', data: dailyInfoList };
+    return { message: 'success', data: dailys.dailys };
   }
 
   @Get('/:date')
   @ApiOperation({
-    summary: '특정 날짜의 데일리 기록 조회',
-    description: `접속한 유저가 기록했던 특정 날짜의 데일리 기록을 조회하는 API입니다.`,
+    summary: '특정 날짜의 데일리 조회',
+    description: `특정 날짜의 데일리를 조회하는 API입니다.`,
   })
   @ApiCookieAuth()
   @ApiOkResponse(api.success.daily)
@@ -78,20 +85,41 @@ export class DailyController {
   @ApiForbiddenResponse(api.forbidden.mail)
   @ApiNotFoundResponse(api.notFound.daily)
   @UseGuards(VerifyMailGuard)
-  async findOneDaily(
+  async findDaily(
     @Req() req: Request,
     @Param('date') date: number,
   ): Promise<object> {
-    const { e_mail }: any = req.user;
-    const dailyInfo = await this.dailyService.findOneDaily(e_mail, date);
+    const { _id }: any = req.user;
+    const daily = await this.dailyService.findDaily(_id, date);
 
-    return { message: 'success', data: dailyInfo };
+    return { message: 'success', data: daily };
+  }
+
+  @Delete('/:date')
+  @ApiOperation({
+    summary: '특정 날짜의 데일리 삭제',
+    description: `특정 날짜의 데일리를 삭제하는 API입니다.`,
+  })
+  @ApiCookieAuth()
+  @ApiOkResponse(api.success.nulldata)
+  @ApiUnauthorizedResponse(api.unauthorized.token)
+  @ApiForbiddenResponse(api.forbidden.mail)
+  @ApiNotFoundResponse(api.notFound.daily)
+  @UseGuards(VerifyMailGuard)
+  async deleteDaily(
+    @Req() req: Request,
+    @Param('date') date: number,
+  ): Promise<object> {
+    const { _id }: any = req.user;
+    await this.dailyService.deleteDaily(_id, date);
+
+    return { message: 'success', data: null };
   }
 
   @Post('/diet')
   @ApiOperation({
     summary: '데일리 식단 생성',
-    description: `현재 날짜의 데일리에 새롭게 작성된 식단을 추가하는 API입니다.`,
+    description: `현재 날짜에 새로운 식단을 추가하는 API입니다.`,
   })
   @ApiCookieAuth()
   @ApiCreatedResponse(api.success.nulldata)
@@ -103,12 +131,12 @@ export class DailyController {
     @Req() req: Request,
     @Body() dto: CreateDailyDietDto,
   ): Promise<object> {
-    const { e_mail }: any = req.user;
+    const { _id }: any = req.user;
     const date = this.publicService.getCurrentDate();
-    const dietInfo: DailyDietInfo = { diet_id: uuid.v4(), ...dto };
+    const daily_diet: DailyDiet = { diet_id: uuid.v4(), ...dto };
 
-    await this.dailyService.findOrCreateDaliyForm(e_mail, date);
-    await this.dailyService.createDailyDiet(e_mail, date, dietInfo);
+    await this.dailyService.findOrCreateDailyForm(_id, date);
+    await this.dailyService.createDailyDiet(_id, date, daily_diet);
 
     return { message: 'success', data: null };
   }
@@ -116,60 +144,135 @@ export class DailyController {
   @Patch('/diet')
   @ApiOperation({
     summary: '데일리 식단 수정',
-    description: `특정 date와 diet_id를 받아 해당 식단을 수정하는 API입니다.`,
+    description: `특정한 식단을 수정하는 API입니다.`,
   })
   @ApiCookieAuth()
   @ApiOkResponse(api.success.nulldata)
   @ApiBadRequestResponse(api.badRequest)
   @ApiUnauthorizedResponse(api.unauthorized.token)
   @ApiForbiddenResponse(api.forbidden.mail)
-  @ApiNotFoundResponse(api.notFound.dailyOrDietId)
   @UseGuards(VerifyMailGuard)
-  async updateOneDailyDiet(
+  async updateDailyDiet(
     @Req() req: Request,
-    @Query() queryDto: UpdateDailyDietQueryDto,
+    @Query() query: UpdateDailyDietQueryDto,
     @Body() dto: UpdateDailyDietBodyDto,
   ) {
-    const { e_mail }: any = req.user;
-    const { date, diet_id } = queryDto;
+    const { _id }: any = req.user;
+    const { date, diet_id } = query;
 
-    await this.dailyService.updateOneDailyDiet(e_mail, date, diet_id, dto);
+    await this.dailyService.updateDailyDiet(_id, date, diet_id, dto);
 
     return { message: 'success', data: null };
   }
 
-  @Delete('/diet/:date')
+  @Delete('/diet')
   @ApiOperation({
     summary: '데일리 식단 삭제',
-    description: `[target=all] 해당 날짜에 기록된 데일리의 모든 식단을 삭제하는 API입니다.
-    \n[target=diet_id] 해당 날짜에 기록된 데일리의 특정한 식단을 삭제하는 API입니다.
-    \ntarget=all 에서 all은 대소문자 상관이 없습니다.`,
+    description: `1. diet_id가 없을 경우 date에 해당하는 전체 식단을 삭제합니다.
+    \n2. diet_id가 있을 경우 date, diet_id에 해당하는 식단을 삭제합니다.`,
   })
   @ApiCookieAuth()
   @ApiOkResponse(api.success.nulldata)
   @ApiBadRequestResponse(api.badRequest)
   @ApiUnauthorizedResponse(api.unauthorized.token)
   @ApiForbiddenResponse(api.forbidden.mail)
-  @ApiNotFoundResponse(api.notFound.dailyOrDietId)
   @UseGuards(VerifyMailGuard)
   async deleteDailyDiet(
     @Req() req: Request,
-    @Param('date') date: number,
-    @Body() dto: DeleteDailyDietOrExerciseDto,
+    @Query() query: DeleteDailyDietQueryDto,
   ) {
-    const { e_mail }: any = req.user;
+    const { _id }: any = req.user;
+    const { date, diet_id } = query;
 
-    if (dto.target.toLowerCase() === 'all')
-      await this.dailyService.deleteAllDailyDiet(e_mail, date);
-    else await this.dailyService.deleteOneDailyDiet(e_mail, date, dto.target);
+    if (!diet_id) await this.dailyService.deleteAllDailyDiet(_id, date);
+    else await this.dailyService.deleteOneDailyDiet(_id, date, diet_id);
 
     return { message: 'success', data: null };
   }
 
-  @Post('/exercise')
+  @Post('/routine')
+  @ApiOperation({
+    summary: '데일리 루틴 생성',
+    description: `현재 날짜에 새로운 운동 루틴을 추가하는 API입니다.
+    \n루틴을 생성한 후에 운동을 추가할 수 있습니다.`,
+  })
+  @ApiCookieAuth()
+  @ApiCreatedResponse(api.success.nulldata)
+  @ApiBadRequestResponse(api.badRequest)
+  @ApiUnauthorizedResponse(api.unauthorized.token)
+  @ApiForbiddenResponse(api.forbidden.mail)
+  @UseGuards(VerifyMailGuard)
+  async createDailyRoutine(
+    @Req() req: Request,
+    @Body() dto: CreateDailyRoutineDto,
+  ): Promise<object> {
+    const { _id }: any = req.user;
+    const date: number = this.publicService.getCurrentDate();
+    const daily_routine: DailyRoutine = {
+      routine_id: uuid.v4(),
+      ...dto,
+      exercises: [],
+    };
+
+    await this.dailyService.findOrCreateDailyForm(_id, date);
+    await this.dailyService.createDailyRoutine(_id, date, daily_routine);
+
+    return { message: 'success', data: null };
+  }
+
+  @Patch('/routine')
+  @ApiOperation({
+    summary: '데일리 루틴 수정',
+    description: `특정한 루틴을 수정하는 API입니다.`,
+  })
+  @ApiCookieAuth()
+  @ApiOkResponse(api.success.nulldata)
+  @ApiBadRequestResponse(api.badRequest)
+  @ApiUnauthorizedResponse(api.unauthorized.token)
+  @ApiForbiddenResponse(api.forbidden.mail)
+  @UseGuards(VerifyMailGuard)
+  async updateDailyRoutine(
+    @Req() req: Request,
+    @Query() query: UpdateDailyRoutineQueryDto,
+    @Body() dto: UpdateDailyRoutineBodyDto,
+  ): Promise<object> {
+    const { _id }: any = req.user;
+    const { date, routine_id } = query;
+
+    await this.dailyService.updateDailyRoutine(_id, date, routine_id, dto);
+
+    return { message: 'success', data: null };
+  }
+
+  @Delete('/routine')
+  @ApiOperation({
+    summary: '데일리 루틴 삭제',
+    description: `1. routine_id가 없을 경우 date에 해당하는 전체 루틴을 삭제합니다.
+    \n2. routine_id가 있을 경우 date, routine_id에 해당하는 루틴을 삭제합니다.`,
+  })
+  @ApiCookieAuth()
+  @ApiOkResponse(api.success.nulldata)
+  @ApiBadRequestResponse(api.badRequest)
+  @ApiUnauthorizedResponse(api.unauthorized.token)
+  @ApiForbiddenResponse(api.forbidden.mail)
+  @UseGuards(VerifyMailGuard)
+  async deleteDailyRoutine(
+    @Req() req: Request,
+    @Query() query: DeleteDailyRoutineQueryDto,
+  ) {
+    const { _id }: any = req.user;
+    const { date, routine_id } = query;
+
+    if (!routine_id) await this.dailyService.deleteAllDailyRoutine(_id, date);
+    else await this.dailyService.deleteOneDailyRoutine(_id, date, routine_id);
+
+    return { message: 'success', data: null };
+  }
+
+  @Post('/exercise/:routine_id')
   @ApiOperation({
     summary: '데일리 운동 생성',
-    description: `현재 날짜의 데일리에 새롭게 작성된 운동을 추가하는 API입니다.`,
+    description: `현재 날짜의 특정한 루틴에 새로운 운동을 추가하는 API입니다.`,
   })
   @ApiCookieAuth()
   @ApiCreatedResponse(api.success.nulldata)
@@ -179,14 +282,13 @@ export class DailyController {
   @UseGuards(VerifyMailGuard)
   async createDailyExercise(
     @Req() req: Request,
+    @Param('routine_id') routine_id: string,
     @Body() dto: CreateDailyExerciseDto,
   ): Promise<object> {
-    const { e_mail }: any = req.user;
+    const { _id }: any = req.user;
     const date: number = this.publicService.getCurrentDate();
-    const exerciseInfo: DailyExerciseInfo = { exercise_id: uuid.v4(), ...dto };
 
-    await this.dailyService.findOrCreateDaliyForm(e_mail, date);
-    await this.dailyService.createDailyExercise(e_mail, date, exerciseInfo);
+    await this.dailyService.createDailyExercise(_id, date, routine_id, dto);
 
     return { message: 'success', data: null };
   }
@@ -194,58 +296,61 @@ export class DailyController {
   @Patch('/exercise')
   @ApiOperation({
     summary: '데일리 운동 수정',
-    description: `특정 date와 exercise_id를 받아 해당 운동을 수정하는 API입니다.`,
+    description: `특정한 운동을 수정하는 API입니다.`,
   })
   @ApiCookieAuth()
   @ApiOkResponse(api.success.nulldata)
   @ApiBadRequestResponse(api.badRequest)
   @ApiUnauthorizedResponse(api.unauthorized.token)
   @ApiForbiddenResponse(api.forbidden.mail)
-  @ApiNotFoundResponse(api.notFound.dailyOrExerciseId)
   @UseGuards(VerifyMailGuard)
-  async updateOneDailyExercise(
+  async updateDailyExercise(
     @Req() req: Request,
     @Query() query: UpdateDailyExerciseQueryDto,
     @Body() dto: UpdateDailyExerciseBodyDto,
   ): Promise<object> {
-    const { e_mail }: any = req.user;
-    const { date, exercise_id } = query;
+    const { _id }: any = req.user;
+    const { date, routine_id, name } = query;
 
-    await this.dailyService.updateOneDailyExercise(
-      e_mail,
+    await this.dailyService.updateDailyExercise(
+      _id,
       date,
-      exercise_id,
-      dto,
+      routine_id,
+      name,
+      dto.set,
     );
 
     return { message: 'success', data: null };
   }
 
-  @Delete('/exercise/:date')
+  @Delete('/exercise')
   @ApiOperation({
     summary: '데일리 운동 삭제',
-    description: `[target=all] 해당 날짜에 기록된 데일리의 모든 식단을 삭제하는 API입니다.
-    \n[target=diet_id] 해당 날짜에 기록된 데일리의 특정한 식단을 삭제하는 API입니다.
-    \ntarget=all 에서 all은 대소문자 상관이 없습니다.`,
+    description: `1. name이 없을 경우 date, routine_id에 해당하는 전체 운동을 삭제합니다.
+    \n2. name이 있을 경우 date, routine_id, name에 해당하는 운동을 삭제합니다.`,
   })
   @ApiCookieAuth()
   @ApiOkResponse(api.success.nulldata)
   @ApiBadRequestResponse(api.badRequest)
   @ApiUnauthorizedResponse(api.unauthorized.token)
   @ApiForbiddenResponse(api.forbidden.mail)
-  @ApiNotFoundResponse(api.notFound.dailyOrExerciseId)
   @UseGuards(VerifyMailGuard)
   async deleteDailyExercise(
     @Req() req: Request,
-    @Param('date') date: number,
-    @Body() dto: DeleteDailyDietOrExerciseDto,
-  ): Promise<object> {
-    const { e_mail }: any = req.user;
+    @Query() query: DeleteDailyExerciseQueryDto,
+  ) {
+    const { _id }: any = req.user;
+    const { date, routine_id, name } = query;
 
-    if (dto.target.toLowerCase() === 'all')
-      await this.dailyService.deleteAllDailyExercise(e_mail, date);
+    if (!name)
+      await this.dailyService.deleteAllDailyExercise(_id, date, routine_id);
     else
-      await this.dailyService.deleteOneDailyExercise(e_mail, date, dto.target);
+      await this.dailyService.deleteOneDailyExercise(
+        _id,
+        date,
+        routine_id,
+        name,
+      );
 
     return { message: 'success', data: null };
   }

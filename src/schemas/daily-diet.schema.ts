@@ -4,7 +4,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export type DailyDietDocument = DailyDiet & Document;
 
-@Schema({ collection: 'daily_diet', versionKey: false, _id: false })
+@Schema({ versionKey: false, _id: false })
 export class DailyDiet {
   @ApiProperty({
     description: '데일리 식단 ID',
@@ -23,7 +23,7 @@ export class DailyDiet {
     required: false,
   })
   @Prop()
-  details: string;
+  detail: string;
 
   @ApiProperty({ description: '식사 시간', example: '08:20', required: false })
   @Prop()
@@ -36,11 +36,10 @@ export class DailyDiet {
     required: false,
   })
   @Prop()
-  meal_img: string;
+  imgs: string[];
 
   @ApiProperty({ description: '식단 평점', example: 3 })
   @Prop({ required: true })
   rate: number;
 }
-
 export const DailyDietSchema = SchemaFactory.createForClass(DailyDiet);

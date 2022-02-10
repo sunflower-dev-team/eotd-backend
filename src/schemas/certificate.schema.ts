@@ -8,9 +8,6 @@ export class Certificate {
   @Prop({ type: Types.ObjectId })
   _id: string;
 
-  @Prop({ unique: true, required: true })
-  e_mail: string;
-
   @Prop({ required: true })
   authMailToken: string;
 

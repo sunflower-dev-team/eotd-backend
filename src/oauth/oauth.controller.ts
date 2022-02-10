@@ -16,6 +16,9 @@ import { OauthCreateUserDto } from './dto/oauth-create-user.dto';
 import { OauthService } from './oauth.service';
 import { api } from 'src/swagger';
 import { AuthService } from 'src/auth/auth.service';
+import * as uuid from 'uuid';
+import { DailyService } from 'src/daily/daily.service';
+import { CustomizedExerciseService } from 'src/customized-exercise/customized-exercise.service';
 
 @Controller('oauth')
 @ApiTags('소셜 로그인 API')
@@ -23,6 +26,8 @@ export class OauthController {
   constructor(
     private readonly oauthService: OauthService,
     private readonly authService: AuthService,
+    private readonly dailyService: DailyService,
+    private readonly customizedExercise: CustomizedExerciseService,
     private readonly publicService: PublicService,
     private readonly config: ConfigService,
   ) {}
@@ -34,9 +39,9 @@ export class OauthController {
     \n[EOTD에 가입된 유저]
     \ncode : 200 | message : suceess | data : 유저정보를 반환합니다.
     \n[EOTD에 가입되지 않은 유저]
-    \ncode : 200 | message : failure | data : kakao_id와 카카오 동의 항목에서 체크한 데이터를 함께 반환합니다.`,
+    \ncode : 200 | message : failure | data : kakao_id를 반환합니다.`,
   })
-  @ApiOkResponse(api.success.user)
+  @ApiOkResponse(api.success.kakaoUser)
   @ApiResponse(api.failure.oauth.kakao)
   getKakaoAuthorizationCode(@Res() res: Response) {
     const ROOT_URL = this.config.get('ROOT_URL');
@@ -65,18 +70,10 @@ export class OauthController {
     );
     const user = await this.publicService.findUserByKakaoId(kakaoTokenData.id);
 
-    if (!user && !kakaoTokenData.kakao_account?.has_email)
+    if (!user)
       return res.send({
         message: 'failure',
         data: { kakao_id: kakaoTokenData.id },
-      });
-    else if (!user && kakaoTokenData.kakao_account?.has_email)
-      return res.send({
-        message: 'failure',
-        data: {
-          kakao_id: kakaoTokenData.id,
-          e_mail: kakaoTokenData.kakao_account.email,
-        },
       });
 
     const userInfo = this.publicService.translateToResUserInfo(user);
@@ -101,14 +98,17 @@ export class OauthController {
     const user = await this.oauthService.createUser(kakao_id, dto);
     const userInfo = this.publicService.translateToResUserInfo(user);
 
-    await this.authService.createCertificate(dto.e_mail, 'kakao_user');
+    await this.authService.createCertificate(user._id, 'kakao_user');
     const { refreshToken, refreshSecret } =
       this.authService.generateRefreshTokenAndSecret(userInfo);
     await this.authService.updateRefreshToken(
-      dto.e_mail,
+      user._id,
       refreshToken,
       refreshSecret,
     );
+
+    await this.dailyService.createDaily(user._id);
+    await this.customizedExercise.createCustomizedExerciseForm(user._id);
 
     return { message: 'success', data: null };
   }

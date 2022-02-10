@@ -32,12 +32,14 @@ import { api } from 'src/swagger';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { PublicService } from 'src/public.service';
 import { CustomizedExerciseService } from 'src/customized-exercise/customized-exercise.service';
+import { DailyService } from 'src/daily/daily.service';
 
 @Controller('auth')
 @ApiTags('인증 API')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly dailyService: DailyService,
     private readonly customizedExerciseService: CustomizedExerciseService,
     private readonly config: ConfigService,
     private readonly publicService: PublicService,
@@ -59,7 +61,7 @@ export class AuthController {
     @Query() dto: VerifyAuthMailTokenDto,
     @Res() res: Response,
   ): Promise<void> {
-    const user = await this.publicService.findUser(dto.e_mail);
+    const user = await this.publicService.findUserBy_id(dto._id);
     const userInfo = this.publicService.translateToResUserInfo(user);
     let isVerifyMail: boolean;
 
@@ -72,16 +74,10 @@ export class AuthController {
     userInfo.isAuthorized = true;
     const { refreshToken, refreshSecret } =
       this.authService.generateRefreshTokenAndSecret(userInfo);
+    this.authService.updateRefreshToken(user._id, refreshToken, refreshSecret);
 
-    this.authService.updateRefreshToken(
-      dto.e_mail,
-      refreshToken,
-      refreshSecret,
-    );
-
-    await this.customizedExerciseService.createCustomizedExerciseForm(
-      dto.e_mail,
-    );
+    await this.dailyService.createDaily(user._id);
+    await this.customizedExerciseService.createCustomizedExerciseForm(user._id);
 
     return res.redirect(this.config.get('SUCCESS_SIGNUP_URL'));
   }
@@ -110,12 +106,12 @@ export class AuthController {
     if (!isVerifyMail) return res.redirect(this.config.get('FAILED_URL'));
 
     const { temporaryPassword, user } =
-      await this.authService.getTemporaryPassword(dto.e_mail);
+      await this.authService.getTemporaryPassword(dto._id);
     const userInfo = this.publicService.translateToResUserInfo(user);
     const { refreshToken, refreshSecret } =
       this.authService.generateRefreshTokenAndSecret(userInfo);
     await this.authService.updateRefreshToken(
-      dto.e_mail,
+      dto._id,
       refreshToken,
       refreshSecret,
     );
@@ -139,8 +135,8 @@ export class AuthController {
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<object> {
-    const { e_mail }: any = req.user;
-    const certificate = await this.authService.findCertificate(e_mail);
+    const { _id }: any = req.user;
+    const certificate = await this.authService.findCertificate(_id);
     let accessToken: string;
     const tokenData = this.authService.verifyJwtToken(
       certificate.refreshToken,
@@ -148,13 +144,13 @@ export class AuthController {
     );
 
     if (!tokenData) {
-      const user = await this.publicService.findUser(e_mail);
+      const user = await this.publicService.findUserBy_id(_id);
       const userInfo = this.publicService.translateToResUserInfo(user);
       const { refreshToken, refreshSecret } =
         this.authService.generateRefreshTokenAndSecret(userInfo);
 
       await this.authService.updateRefreshToken(
-        e_mail,
+        _id,
         refreshToken,
         refreshSecret,
       );
@@ -187,8 +183,8 @@ export class AuthController {
     @Req() req: Request,
     @Body() dto: ValidatePasswordDto,
   ): Promise<object> {
-    const { e_mail }: any = req.user;
-    const user = await this.publicService.findUser(e_mail);
+    const { _id }: any = req.user;
+    const user = await this.publicService.findUserBy_id(_id);
 
     if (!this.publicService.isSamePassword(dto.password, user.password))
       throw new UnauthorizedException(`The password doesn't match`);

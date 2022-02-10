@@ -8,6 +8,7 @@ import { OauthCreateUserDto } from './dto/oauth-create-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { Model } from 'mongoose';
+import * as uuid from 'uuid';
 
 @Injectable()
 export class OauthService {
@@ -65,9 +66,9 @@ export class OauthService {
     userInfo: OauthCreateUserDto,
   ): Promise<User> {
     const user: User = await this.userModel
-      .create({ kakao_id, ...userInfo, isAuthorized: true })
+      .create({ _id: uuid.v4(), kakao_id, ...userInfo, isAuthorized: true })
       .catch(() => {
-        throw new ConflictException(`Existing e_mail : ${userInfo.e_mail}`);
+        throw new ConflictException(`Existing user's kakao_id : ${kakao_id}`);
       });
     return user;
   }

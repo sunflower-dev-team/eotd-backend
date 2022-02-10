@@ -1,5 +1,5 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 
 export type UserDocument = User & Document;
@@ -7,10 +7,17 @@ export type UserDocument = User & Document;
 @Schema({ collection: 'user', versionKey: false })
 export class User {
   @ApiProperty({
+    description: 'uuid',
+    example: '929aa1a4-8f76-4e28-9a0b-3888ded962b5',
+  })
+  @Prop({ type: Types.ObjectId })
+  _id: string;
+
+  @ApiProperty({
     description: '이메일',
     example: 'example.naver.com',
   })
-  @Prop({ unique: true, required: true })
+  @Prop({ unique: true })
   e_mail: string;
 
   @ApiProperty({
@@ -18,7 +25,7 @@ export class User {
       'kakao 유저 id, 회원가입을 카카오 소셜 로그인으로 진행했는지 확인할 수 있는 속성입니다.',
     example: 51843215,
   })
-  @Prop()
+  @Prop({ unique: true })
   kakao_id: number;
 
   @ApiProperty({ description: '이름', example: '홍길동' })

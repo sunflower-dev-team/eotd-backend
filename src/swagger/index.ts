@@ -1,7 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { KakaoSigninFailure } from 'src/oauth/interfaces/kakao-signin-failure.interface';
-import { Daily } from 'src/schemas/daily.schema';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { Daily, Dailys } from 'src/schemas/daily.schema';
 import { Exercise } from 'src/schemas/exercise.schema';
+import { KakaoSigninFailure } from 'src/oauth/interfaces/kakao-signin-failure.interface';
 import { UserDetail } from 'src/schemas/user-detail.schema';
 import { UserInfo } from 'src/user/interfaces/user-info.interface';
 
@@ -13,12 +13,23 @@ class SuccessResponseDataNull {
   data: 'null';
 }
 
-class SuccessResponseDataUser {
+class BasicUserData extends OmitType(UserInfo, ['kakao_id'] as const) {}
+class KakaoUserData extends OmitType(UserInfo, ['e_mail'] as const) {}
+
+class SuccessResponseBasicUserData {
   @ApiProperty({ example: 'success' })
   message: string;
 
   @ApiProperty()
-  data: UserInfo;
+  data: BasicUserData;
+}
+
+class SuccessResponseKakaoUserData {
+  @ApiProperty({ example: 'success' })
+  message: string;
+
+  @ApiProperty()
+  data: KakaoUserData;
 }
 
 class SuccessResponseDataUserDetail {
@@ -29,12 +40,12 @@ class SuccessResponseDataUserDetail {
   data: UserDetail;
 }
 
-class SuccessResponseDataDailyList {
+class SuccessResponseDataDailys {
   @ApiProperty({ example: 'success' })
   message: string;
 
-  @ApiProperty({ type: [Daily] })
-  data: Daily[];
+  @ApiProperty({ type: Dailys })
+  data: Dailys;
 }
 
 class SuccessResponseDataDaily {
@@ -75,17 +86,21 @@ export const api = {
       description: 'success',
       type: SuccessResponseDataNull,
     },
-    user: {
+    basicUser: {
       description: 'success',
-      type: SuccessResponseDataUser,
+      type: SuccessResponseBasicUserData,
+    },
+    kakaoUser: {
+      description: 'success',
+      type: SuccessResponseKakaoUserData,
     },
     userDetail: {
       description: 'success',
       type: SuccessResponseDataUserDetail,
     },
-    dailyList: {
+    dailys: {
       description: 'success',
-      type: SuccessResponseDataDailyList,
+      type: SuccessResponseDataDailys,
     },
     daily: {
       description: 'success',
@@ -139,7 +154,7 @@ export const api = {
     detail: {
       description: '유저의 디테일이 존재하지 않는 경우 응답합니다.',
     },
-    dailyList: {
+    dailys: {
       description: '어떠한 데일리 기록도 없는 경우 응답합니다.',
     },
     daily: {

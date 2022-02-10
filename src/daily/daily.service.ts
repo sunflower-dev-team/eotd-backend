@@ -1,272 +1,392 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Daily, DailyDocument } from 'src/schemas/daily.schema';
-import { DailyDietInfo } from 'src/daily/interfaces/daily-diet-info.interface';
-import { DailyExerciseInfo } from 'src/daily/interfaces/daily-exercise-info.interface';
+import { Daily, Dailys, DailysDocument } from 'src/schemas/daily.schema';
 import { UpdateDailyDietBodyDto } from './dto/update-daily-diet.dto';
-import { UpdateDailyExerciseBodyDto } from './dto/update-daily-exercise.dto';
+import { UpdateDailyRoutineBodyDto } from './dto/update-daily-routine.dto';
+import {
+  CreateDailyExerciseDto,
+  ExerciseSetInfo,
+} from './dto/create-daily-exercise.dto';
+import { DailyDiet } from 'src/schemas/daily-diet.schema';
+import { DailyRoutine } from 'src/schemas/daily-routine.schema';
 
 @Injectable()
 export class DailyService {
   constructor(
-    @InjectModel(Daily.name) private dailyModel: Model<DailyDocument>,
+    @InjectModel(Dailys.name) private dailysModel: Model<DailysDocument>,
   ) {}
 
-  // C-daily
-  async findOrCreateDaliyForm(e_mail: string, date: number): Promise<void> {
-    const dailyForm: Daily = await this.dailyModel.findOne({
-      e_mail,
-      date,
+  // Daily - C,R,D
+  async createDaily(_id: string): Promise<void> {
+    await this.dailysModel.create({ _id }).catch(() => {
+      throw new InternalServerErrorException(
+        'Daily-document has not been created',
+      );
     });
-    if (!dailyForm)
-      await this.dailyModel.create({ e_mail, date }).catch(() => {
-        throw new InternalServerErrorException(
-          'Daily-document has not been created',
-        );
-      });
     return;
   }
 
-  async createDailyDiet(
-    e_mail: string,
-    date: number,
-    daily_diet: DailyDietInfo,
-  ): Promise<void> {
-    await this.dailyModel
-      .updateOne(
-        { e_mail, date },
-        { $push: { daily_diet } },
-        { runValidators: true },
-      )
-      .catch(() => {
-        throw new InternalServerErrorException(
-          'Daily-diet-subDocument has not been created',
-        );
+  async findOrCreateDailyForm(_id: string, date: number): Promise<void> {
+    const dailys = await this.dailysModel.findOne({
+      _id,
+      dailys: { $elemMatch: { date } },
+    });
+
+    if (!dailys) {
+      await this.dailysModel.findByIdAndUpdate(_id, {
+        $push: { dailys: { date } },
       });
+    }
     return;
   }
 
-  async createDailyExercise(
-    e_mail: string,
-    date: number,
-    daily_exercise: DailyExerciseInfo,
-  ): Promise<void> {
-    await this.dailyModel
-      .updateOne(
-        { e_mail, date },
-        { $push: { daily_exercise } },
-        { runValidators: true },
-      )
-      .catch(() => {
-        throw new InternalServerErrorException(
-          'Daily-exercise-subDocument has not been created',
-        );
-      });
-    return;
+  async findDailys(_id: string): Promise<Dailys> {
+    const dailys = await this.dailysModel.findById(_id);
+
+    if (!dailys.dailys.length)
+      throw new NotFoundException('No exist daily anything');
+    return dailys;
   }
 
-  // R-daily
-  async findAllDaily(e_mail: string): Promise<Daily[]> {
-    const dailyInfoList: Daily[] = await this.dailyModel
-      .find({ e_mail })
-      .select({ _id: 0 });
-    if (!dailyInfoList.length)
-      throw new NotFoundException('No exist dailyInfoList');
-    return dailyInfoList;
-  }
+  async findDaily(_id: string, date: number): Promise<Daily> {
+    const dailys = await this.dailysModel.findById(_id, {
+      dailys: { $elemMatch: { date } },
+    });
 
-  async findOneDaily(e_mail: string, date: number): Promise<Daily> {
-    const dailyInfo: Daily | null = await this.dailyModel
-      .findOne({
-        e_mail,
-        date,
-      })
-      .select({ _id: 0 });
-    if (!dailyInfo)
+    if (!dailys.dailys[0])
       throw new NotFoundException(
         'There is no info corresponding to that date',
       );
-    return dailyInfo;
+    return dailys.dailys[0];
   }
 
-  // U-daily
-  async updateOneDailyDiet(
-    e_mail: string,
+  async deleteDaily(_id: string, date: number): Promise<void> {
+    await this.dailysModel
+      .findByIdAndUpdate(
+        _id,
+        { $pull: { dailys: { date } } },
+        { runValidators: true },
+      )
+      .catch(() => {
+        throw new InternalServerErrorException(
+          `user's daily-list has not been deleted`,
+        );
+      });
+    return;
+  }
+
+  async deleteDailys(_id: string): Promise<void> {
+    await this.dailysModel.findByIdAndDelete(_id).catch(() => {
+      throw new InternalServerErrorException(
+        `user's daily-list has not been deleted`,
+      );
+    });
+    return;
+  }
+
+  // Diet - C,U,D
+  async createDailyDiet(
+    _id: string,
+    date: number,
+    daily_diet: DailyDiet,
+  ): Promise<void> {
+    await this.dailysModel.findByIdAndUpdate(
+      _id,
+      { $push: { 'dailys.$[daily].daily_diet': daily_diet } },
+      {
+        runValidators: true,
+        arrayFilters: [{ 'daily.date': date }],
+      },
+    );
+    return;
+  }
+
+  async updateDailyDiet(
+    _id: string,
     date: number,
     diet_id: string,
     dietInfo: UpdateDailyDietBodyDto,
   ): Promise<void> {
     const setForm: object = {};
 
-    for (const key in dietInfo) setForm[`daily_diet.$.${key}`] = dietInfo[key];
+    for (const key in dietInfo)
+      setForm[`dailys.$[daily].daily_diet.$[diet].${key}`] = dietInfo[key];
 
-    const previousDaily = await this.dailyModel
-      .findOneAndUpdate(
-        {
-          e_mail,
-          date,
-          'daily_diet.diet_id': diet_id,
-        },
+    await this.dailysModel
+      .findByIdAndUpdate(
+        _id,
         {
           $set: setForm,
         },
-        { runValidators: true },
+        {
+          runValidators: true,
+          arrayFilters: [{ 'daily.date': date }, { 'diet.diet_id': diet_id }],
+        },
       )
       .catch(() => {
         throw new InternalServerErrorException(
           'Daily_diet has not been updated',
         );
       });
-
-    if (!previousDaily)
-      throw new NotFoundException('There is no daily for that date');
-    else if (
-      !previousDaily.daily_diet.filter(
-        (dietInfo) => dietInfo.diet_id === diet_id,
-      ).length
-    )
-      throw new NotFoundException(`No exist diet_id:${diet_id}`);
     return;
   }
 
-  async updateOneDailyExercise(
-    e_mail: string,
-    date: number,
-    exercise_id: string,
-    exerciseInfo: UpdateDailyExerciseBodyDto,
-  ): Promise<void> {
-    const setForm: object = {};
-
-    for (const key in exerciseInfo)
-      setForm[`daily_exercise.$.${key}`] = exerciseInfo[key];
-
-    const previousDaily = await this.dailyModel
-      .findOneAndUpdate(
-        {
-          e_mail,
-          date,
-          'daily_exercise.exercise_id': exercise_id,
-        },
-        {
-          $set: setForm,
-        },
-        { runValidators: true },
+  async deleteAllDailyDiet(_id: string, date: number): Promise<void> {
+    await this.dailysModel
+      .findByIdAndUpdate(
+        _id,
+        { 'dailys.$[daily].daily_diet': [] },
+        { runValidators: true, arrayFilters: [{ 'daily.date': date }] },
       )
-      .catch(() => {
-        throw new InternalServerErrorException(
-          'Daily_exercise has not been updated',
-        );
-      });
-
-    if (!previousDaily)
-      throw new NotFoundException('There is no daily for that date');
-    else if (
-      !previousDaily.daily_exercise.filter(
-        (exerciseInfo) => exerciseInfo.exercise_id === exercise_id,
-      ).length
-    )
-      throw new NotFoundException(`No exist exercise_id:${exercise_id}`);
-    return;
-  }
-
-  // D-daily
-  async deleteDaily(e_mail: string): Promise<void> {
-    await this.dailyModel.deleteMany({ e_mail }).catch(() => {
-      throw new InternalServerErrorException(
-        `${e_mail}'s daily-list has not been deleted`,
-      );
-    });
-    return;
-  }
-
-  async deleteAllDailyDiet(e_mail: string, date: number): Promise<void> {
-    const previousDaily = await this.dailyModel
-      .findOneAndUpdate({ e_mail, date }, { daily_diet: [] })
       .catch(() => {
         throw new InternalServerErrorException(
           'Daily_diet datas has not been deleted',
         );
       });
-
-    if (!previousDaily)
-      throw new NotFoundException('There is no daily for that date');
-    else if (!previousDaily.daily_diet.length)
-      throw new NotFoundException(`No exist diet datas`);
     return;
   }
 
   async deleteOneDailyDiet(
-    e_mail: string,
+    _id: string,
     date: number,
     diet_id: string,
   ): Promise<void> {
-    const previousDaily = await this.dailyModel
-      .findOneAndUpdate(
-        { e_mail, date },
-        { $pull: { daily_diet: { diet_id } } },
+    await this.dailysModel
+      .findByIdAndUpdate(
+        _id,
+        {
+          $pull: { 'dailys.$[daily].daily_diet': { diet_id } },
+        },
+        { runValidators: true, arrayFilters: [{ 'daily.date': date }] },
       )
       .catch(() => {
         throw new InternalServerErrorException(
           `Daily_diet:${diet_id} has not been deleted`,
         );
       });
-
-    if (!previousDaily)
-      throw new NotFoundException('There is no daily for that date');
-    else if (
-      !previousDaily.daily_diet.filter(
-        (dietInfo) => dietInfo.diet_id === diet_id,
-      ).length
-    )
-      throw new NotFoundException(`No exist diet_id:${diet_id}`);
     return;
   }
 
-  async deleteAllDailyExercise(e_mail: string, date: number): Promise<void> {
-    const previousDaily = await this.dailyModel
-      .findOneAndUpdate({ e_mail, date }, { daily_exercise: [] })
+  // Routine - C,U,D
+  async createDailyRoutine(
+    _id: string,
+    date: number,
+    daily_routine: DailyRoutine,
+  ): Promise<void> {
+    await this.dailysModel.findByIdAndUpdate(
+      _id,
+      { $push: { 'dailys.$[daily].daily_routine': daily_routine } },
+      { runValidators: true, arrayFilters: [{ 'daily.date': date }] },
+    );
+    return;
+  }
+
+  async updateDailyRoutine(
+    _id: string,
+    date: number,
+    routine_id: string,
+    daily_routine: UpdateDailyRoutineBodyDto,
+  ): Promise<void> {
+    const setForm: object = {};
+
+    for (const key in daily_routine)
+      setForm[`dailys.$[daily].daily_routine.$[routine].${key}`] =
+        daily_routine[key];
+
+    await this.dailysModel
+      .findByIdAndUpdate(
+        _id,
+        {
+          $set: setForm,
+        },
+        {
+          runValidators: true,
+          arrayFilters: [
+            { 'daily.date': date },
+            { 'routine.routine_id': routine_id },
+          ],
+        },
+      )
+      .catch(() => {
+        throw new InternalServerErrorException(
+          'Daily_exercise has not been updated',
+        );
+      });
+    return;
+  }
+
+  async deleteAllDailyRoutine(_id: string, date: number): Promise<void> {
+    await this.dailysModel
+      .findByIdAndUpdate(
+        _id,
+        { 'dailys.$[daily].daily_routine': [] },
+        { runValidators: true, arrayFilters: [{ 'daily.date': date }] },
+      )
       .catch(() => {
         throw new InternalServerErrorException(
           'Daily_exercise datas has not been deleted',
         );
       });
+    return;
+  }
 
-    if (!previousDaily)
-      throw new NotFoundException('There is no daily for that date');
-    else if (!previousDaily.daily_exercise.length)
-      throw new NotFoundException(`No exist diet datas`);
+  async deleteOneDailyRoutine(
+    _id: string,
+    date: number,
+    routine_id: string,
+  ): Promise<void> {
+    await this.dailysModel
+      .findByIdAndUpdate(
+        _id,
+        { $pull: { 'dailys.$[daily].daily_routine': { routine_id } } },
+        { runValidators: true, arrayFilters: [{ 'daily.date': date }] },
+      )
+      .catch(() => {
+        throw new InternalServerErrorException(
+          'Daily_exercise datas has not been deleted',
+        );
+      });
+    return;
+  }
+
+  // Exercise - C,U,D
+  async createDailyExercise(
+    _id: string,
+    date: number,
+    routine_id: string,
+    daily_exercise: CreateDailyExerciseDto,
+  ): Promise<void> {
+    await this.dailysModel
+      .findByIdAndUpdate(
+        _id,
+        {
+          $push: {
+            'dailys.$[daily].daily_routine.$[routine].exercises': {
+              name: daily_exercise.name,
+              set: daily_exercise.set,
+            },
+          },
+        },
+        {
+          runValidators: true,
+          arrayFilters: [
+            {
+              'daily.date': date,
+            },
+            {
+              'routine.routine_id': routine_id,
+            },
+          ],
+        },
+      )
+      .catch(() => {
+        throw new BadRequestException(
+          `[count] and [kg] are essential when a [set]column exists.`,
+        );
+      });
+    return;
+  }
+
+  async updateDailyExercise(
+    _id: string,
+    date: number,
+    routine_id: string,
+    name: string,
+    set: ExerciseSetInfo,
+  ): Promise<void> {
+    await this.dailysModel
+      .findByIdAndUpdate(
+        _id,
+        {
+          'dailys.$[daily].daily_routine.$[routine].exercises.$[exercise]': {
+            name,
+            set,
+          },
+        },
+        {
+          runValidators: true,
+          arrayFilters: [
+            {
+              'daily.date': date,
+            },
+            {
+              'routine.routine_id': routine_id,
+            },
+            { 'exercise.name': name },
+          ],
+        },
+      )
+      .catch(() => {
+        throw new BadRequestException(
+          `[count] and [kg] are essential when a [set]column exists.`,
+        );
+      });
+    return;
+  }
+
+  async deleteAllDailyExercise(
+    _id: string,
+    date: number,
+    routine_id: string,
+  ): Promise<void> {
+    await this.dailysModel
+      .findByIdAndUpdate(
+        _id,
+        {
+          'dailys.$[daily].daily_routine.$[routine].exercises': [],
+        },
+        {
+          runValidators: true,
+          arrayFilters: [
+            { 'daily.date': date },
+            { 'routine.routine_id': routine_id },
+          ],
+        },
+      )
+      .catch(() => {
+        throw new InternalServerErrorException(
+          'Daily_exercise datas has not been deleted',
+        );
+      });
     return;
   }
 
   async deleteOneDailyExercise(
-    e_mail: string,
+    _id: string,
     date: number,
-    exercise_id: string,
+    routine_id: string,
+    name: string,
   ): Promise<void> {
-    const previousDaily = await this.dailyModel
-      .findOneAndUpdate(
-        { e_mail, date },
-        { $pull: { daily_exercise: { exercise_id } } },
+    await this.dailysModel
+      .findByIdAndUpdate(
+        _id,
+        {
+          $pull: {
+            'dailys.$[daily].daily_routine.$[routine].exercises': {
+              name,
+            },
+          },
+        },
+        {
+          runValidators: true,
+          arrayFilters: [
+            { 'daily.date': date },
+            { 'routine.routine_id': routine_id },
+          ],
+        },
       )
-      .catch(() => {
+      .catch((err) => {
+        console.log(err);
         throw new InternalServerErrorException(
-          `Daily_exercise:${exercise_id} has not been deleted`,
+          `Daily_exercise:${name} has not been deleted`,
         );
       });
-
-    if (!previousDaily)
-      throw new NotFoundException('There is no daily for that date');
-    else if (
-      !previousDaily.daily_exercise.filter(
-        (exerciseInfo) => exerciseInfo.exercise_id === exercise_id,
-      ).length
-    )
-      throw new NotFoundException(`No exist exercise_id:${exercise_id}`);
     return;
   }
 }

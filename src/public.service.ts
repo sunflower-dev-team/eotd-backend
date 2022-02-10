@@ -10,19 +10,22 @@ import * as bcrypt from 'bcrypt';
 export class PublicService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
-  async findUser(e_mail: string): Promise<User> {
-    const user: User | null = await this.userModel
-      .findOne({ e_mail })
-      .select({ _id: 0 });
+  async findUserByEmail(e_mail: string): Promise<User> {
+    const user: User | null = await this.userModel.findOne({ e_mail });
+
+    if (!user) throw new NotFoundException('No exist user');
+    return JSON.parse(JSON.stringify(user));
+  }
+
+  async findUserBy_id(_id: string): Promise<User> {
+    const user: User | null = await this.userModel.findById(_id);
 
     if (!user) throw new NotFoundException('No exist user');
     return JSON.parse(JSON.stringify(user));
   }
 
   async findUserByKakaoId(kakao_id: number): Promise<User> {
-    const user: User | null = await this.userModel
-      .findOne({ kakao_id })
-      .select({ _id: 0 });
+    const user: User | null = await this.userModel.findOne({ kakao_id });
 
     if (!user) return null;
     return JSON.parse(JSON.stringify(user));
@@ -45,10 +48,13 @@ export class PublicService {
   }
 
   translateToResUserInfo(user: User | JWTTokenData): UserInfo {
-    const { e_mail, name, gender, birth, isAuthorized, kakao_id, admin } = user;
+    const { _id, e_mail, kakao_id, name, gender, birth, isAuthorized, admin } =
+      user;
 
     const userInfo: UserInfo = {
+      _id,
       e_mail,
+      kakao_id,
       name,
       gender,
       birth,
@@ -56,7 +62,7 @@ export class PublicService {
       admin,
     };
 
-    if (kakao_id) userInfo.kakao_id = user.kakao_id;
+    !e_mail ? delete userInfo.e_mail : delete userInfo.kakao_id;
 
     return userInfo;
   }

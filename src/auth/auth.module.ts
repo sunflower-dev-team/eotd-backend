@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PassportModule } from '@nestjs/passport';
 import { CustomizedExerciseModule } from 'src/customized-exercise/customized-exercise.module';
+import { DailyModule } from 'src/daily/daily.module';
 import { PublicService } from 'src/public.service';
 import { Certificate, CertificateSchema } from 'src/schemas/certificate.schema';
 import { User, UserSchema } from 'src/schemas/user.schema';
@@ -19,6 +20,7 @@ import { JWTRefreshStrategy } from './strategies/jwt-refresh.strategy';
       { name: User.name, schema: UserSchema },
       { name: Certificate.name, schema: CertificateSchema },
     ]),
+    DailyModule,
     CustomizedExerciseModule,
   ],
   controllers: [AuthController],

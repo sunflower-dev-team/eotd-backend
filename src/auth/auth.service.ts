@@ -31,66 +31,54 @@ export class AuthService {
 
   // verify-auth-mail-token
   async isVerifyAuthMailToken(dto: VerifyAuthMailTokenDto): Promise<boolean> {
-    const { e_mail, authMailToken } = dto;
-
-    const certificate: Certificate = await this.certificateModel
-      .findOne({
-        e_mail,
-      })
-      .select({ _id: 0 });
+    const { _id, authMailToken } = dto;
+    const certificate: Certificate = await this.certificateModel.findById(_id);
 
     if (!certificate && authMailToken !== certificate.authMailToken)
       return false;
 
-    await this.userModel
-      .updateOne({ e_mail }, { isAuthorized: true })
-      .catch(() => {
-        throw new InternalServerErrorException(
-          'No isAuthorized-field has been updated',
-        );
-      });
+    const user: User = await this.userModel.findByIdAndUpdate(_id, {
+      isAuthorized: true,
+    });
+    if (!user)
+      throw new InternalServerErrorException(
+        'No isAuthorized-field has been updated',
+      );
     return true;
   }
 
   // C-temporary password
   async getTemporaryPassword(
-    e_mail: string,
+    _id: string,
   ): Promise<{ temporaryPassword: string; user: User }> {
     const salt = bcyrpt.genSaltSync(2);
     const temporaryPassword: string = '!' + uuid.v1().slice(0, 8);
-    const user: User = await this.userModel.findOneAndUpdate(
-      { e_mail },
+
+    const user: User = await this.userModel.findByIdAndUpdate(
+      _id,
       { password: bcyrpt.hashSync(temporaryPassword, salt) },
       { new: true },
     );
+    if (!user)
+      throw new InternalServerErrorException(
+        'No password-field has been updated',
+      );
     return { temporaryPassword, user };
   }
 
   // C-certificate
-  async createCertificate(
-    e_mail: string,
-    authMailToken: string,
-  ): Promise<void> {
-    await this.certificateModel
-      .create({
-        e_mail,
-        authMailToken,
-      })
-      .catch(() => {
-        throw new InternalServerErrorException(
-          'No authentication model has been created',
-        );
-      });
+  async createCertificate(_id: string, authMailToken: string): Promise<void> {
+    await this.certificateModel.create({ _id, authMailToken }).catch(() => {
+      throw new InternalServerErrorException(
+        'No authentication model has been created',
+      );
+    });
     return;
   }
 
   // R-certificate
-  async findCertificate(e_mail: string): Promise<Certificate> {
-    const certificate: Certificate = await this.certificateModel
-      .findOne({
-        e_mail,
-      })
-      .select({ _id: 0 });
+  async findCertificate(_id: string): Promise<Certificate> {
+    const certificate: Certificate = await this.certificateModel.findById(_id);
 
     if (!certificate) throw new NotFoundException('No exist user');
     return JSON.parse(JSON.stringify(certificate));
@@ -98,12 +86,12 @@ export class AuthService {
 
   // U-certificate
   async updateRefreshToken(
-    e_mail: string,
+    _id: string,
     refreshToken: string,
     refreshSecret: string,
   ): Promise<void> {
     await this.certificateModel
-      .updateOne({ e_mail }, { refreshToken, refreshSecret })
+      .findByIdAndUpdate(_id, { refreshToken, refreshSecret })
       .catch(() => {
         throw new InternalServerErrorException(
           'No authentication model has been updated',
@@ -112,12 +100,9 @@ export class AuthService {
     return;
   }
 
-  async updateAuthMailToken(
-    e_mail: string,
-    authMailToken: string,
-  ): Promise<void> {
+  async updateAuthMailToken(_id: string, authMailToken: string): Promise<void> {
     await this.certificateModel
-      .updateOne({ e_mail }, { authMailToken })
+      .findByIdAndUpdate(_id, { authMailToken })
       .catch(() => {
         throw new InternalServerErrorException(
           'No authentication model has been updated',
@@ -127,16 +112,16 @@ export class AuthService {
   }
 
   // D-certificate
-  async deleteCertificate(e_mail: string): Promise<void> {
-    const previousCertificate = await this.certificateModel
-      .findOneAndDelete({ e_mail })
+  async deleteCertificate(_id: string): Promise<void> {
+    const previousCertificate: Certificate = await this.certificateModel
+      .findByIdAndDelete(_id)
       .catch(() => {
         throw new InternalServerErrorException(
           'No authentication model has been deleted',
         );
       });
     if (!previousCertificate)
-      throw new NotFoundException(`No exist ${e_mail}'s certificate`);
+      throw new NotFoundException(`No exist user's certificate`);
     return;
   }
 

@@ -6,6 +6,8 @@ import { PublicService } from 'src/public.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/schemas/user.schema';
 import { AuthModule } from 'src/auth/auth.module';
+import { DailyModule } from 'src/daily/daily.module';
+import { CustomizedExerciseModule } from 'src/customized-exercise/customized-exercise.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { AuthModule } from 'src/auth/auth.module';
     }),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     AuthModule,
+    DailyModule,
+    CustomizedExerciseModule,
   ],
   providers: [OauthService, PublicService],
   controllers: [OauthController],
