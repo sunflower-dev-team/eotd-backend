@@ -1,12 +1,32 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
 
-@Controller()
+@Controller('')
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  home() {
+    return 'Welcome EOTD API';
+  }
+
+  @Get('/success/signup')
+  successSignup() {
+    return 'success';
+  }
+
+  @Get('/success/password/:password')
+  successPassword(@Param('password') password: string) {
+    return password;
+  }
+
+  @Get('/failed')
+  failed() {
+    return 'failed';
+  }
+
+  @Get('/cookie')
+  @UseGuards(AuthGuard('jwt-access'))
+  getCookieData(@Req() req: Request) {
+    return req.user;
   }
 }
