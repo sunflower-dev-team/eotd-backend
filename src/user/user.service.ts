@@ -13,6 +13,7 @@ import { CreateUserDetailDto } from './dto/create-user-detail.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
+import * as uuid from 'uuid';
 
 @Injectable()
 export class UserService {
@@ -23,30 +24,31 @@ export class UserService {
   ) {}
 
   // C-user
-  async createUser(userInfo: CreateUserDto): Promise<void> {
+  async createUser(userInfo: CreateUserDto): Promise<User> {
     const salt: string = bcrypt.genSaltSync();
     const password: string = bcrypt.hashSync(userInfo.password, salt);
 
-    await this.userModel
+    const user: User = await this.userModel
       .create({
+        _id: uuid.v4(),
         ...userInfo,
         password,
       })
       .catch(() => {
         throw new ConflictException(`Existing e_mail : ${userInfo.e_mail}`);
       });
-    return;
+    return user;
   }
 
   // U-user
-  async updateUser(e_mail: string, userInfo: UpdateUserDto): Promise<User> {
+  async updateUser(_id: string, userInfo: UpdateUserDto): Promise<User> {
     if (userInfo.password) {
       const salt: string = bcrypt.genSaltSync();
       const password: string = bcrypt.hashSync(userInfo.password, salt);
       userInfo.password = password;
     }
     const updatedUser = await this.userModel
-      .findOneAndUpdate({ e_mail }, userInfo, { new: true })
+      .findByIdAndUpdate(_id, userInfo, { new: true })
       .catch(() => {
         throw new InternalServerErrorException(
           'User-info has not been updated',
@@ -57,9 +59,9 @@ export class UserService {
   }
 
   // D-user
-  async deleteUser(e_mail: string): Promise<void> {
+  async deleteUser(_id: string): Promise<void> {
     const previousUser = await this.userModel
-      .findOneAndDelete({ e_mail })
+      .findByIdAndDelete(_id)
       .catch(() => {
         throw new InternalServerErrorException('User has not been deleted');
       });
@@ -69,61 +71,55 @@ export class UserService {
 
   // C-detail
   async createUserDetail(
-    e_mail: string,
+    _id: string,
     detailInfo: CreateUserDetailDto,
   ): Promise<void> {
     await this.userDetailModel
-      .create({ e_mail, ...detailInfo })
+      .create({ _id, ...detailInfo })
       .catch(async () => {
-        if (await this.userDetailModel.exists({ e_mail }))
-          throw new ConflictException(`Existing ${e_mail}'s detail`);
+        if (await this.userDetailModel.exists({ _id }))
+          throw new ConflictException(`Existing user's detail`);
         throw new ConflictException(`Existing nickname:${detailInfo.nickname}`);
       });
     return;
   }
 
   // R-detail
-  async findUserDetail(e_mail: string): Promise<UserDetail> {
-    const detailInfo: UserDetail = await this.userDetailModel
-      .findOne({ e_mail })
-      .select({ _id: 0 });
+  async findUserDetail(_id: string): Promise<UserDetail> {
+    const detailInfo: UserDetail = await this.userDetailModel.findById(_id);
 
-    if (!detailInfo) throw new NotFoundException(`No exist ${e_mail}'s detail`);
+    if (!detailInfo) throw new NotFoundException(`No exist user's detail`);
     return detailInfo;
   }
 
   // U-detail
   async updateUserDetail(
-    e_mail: string,
+    _id: string,
     detailInfo: UpdateUserDetailDto,
   ): Promise<void> {
     const previousDetail = await this.userDetailModel
-      .findOneAndUpdate({ e_mail }, detailInfo)
+      .findByIdAndUpdate(_id, detailInfo)
       .catch(() => {
         throw new InternalServerErrorException(
           `User'detail has not been updated`,
         );
       });
 
-    if (!previousDetail)
-      throw new NotFoundException(`No exist ${e_mail}'s detail`);
+    if (!previousDetail) throw new NotFoundException(`No exist user's detail`);
     return;
   }
 
   // D-detail
-  async deleteUserDetail(e_mail: string): Promise<void> {
+  async deleteUserDetail(_id: string): Promise<void> {
     const previousDetail = await this.userDetailModel
-      .findOneAndDelete({
-        e_mail,
-      })
+      .findByIdAndDelete(_id)
       .catch(() => {
         throw new InternalServerErrorException(
           `User'detail has not been deleted`,
         );
       });
 
-    if (!previousDetail)
-      throw new NotFoundException(`No exist ${e_mail}'s detail`);
+    if (!previousDetail) throw new NotFoundException(`No exist user's detail`);
     return;
   }
 }

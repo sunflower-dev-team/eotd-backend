@@ -1,4 +1,6 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
 
 @Controller('')
 export class AppController {
@@ -20,5 +22,11 @@ export class AppController {
   @Get('/failed')
   failed() {
     return 'failed';
+  }
+
+  @Get('/cookie')
+  @UseGuards(AuthGuard('jwt-access'))
+  getCookieData(@Req() req: Request) {
+    return req.user;
   }
 }

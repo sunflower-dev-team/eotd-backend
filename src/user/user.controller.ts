@@ -27,6 +27,7 @@ import {
   ApiCreatedResponse,
   ApiConflictResponse,
   ApiBadRequestResponse,
+  ApiResponse,
 } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { UserService } from './user.service';
@@ -63,9 +64,10 @@ export class UserController {
   @ApiConflictResponse(api.conflict.e_mail)
   async signup(@Body() dto: CreateUserDto): Promise<object> {
     const authMailToken = this.mailService.generateAuthMailToken();
-    await this.userService.createUser(dto);
-    await this.authService.createCertificate(dto.e_mail, authMailToken);
+    const user = await this.userService.createUser(dto);
+    await this.authService.createCertificate(user._id, authMailToken);
     await this.mailService.sendAuthMailTokenForSignup(
+      user._id,
       dto.e_mail,
       authMailToken,
     );
@@ -79,7 +81,7 @@ export class UserController {
     description: `로그인을 위한 API입니다.
     \n응답 성공시 accessToken이 쿠키에 담깁니다.`,
   })
-  @ApiOkResponse(api.success.user)
+  @ApiOkResponse(api.success.basicUser)
   @ApiBadRequestResponse(api.badRequest)
   @ApiUnauthorizedResponse(api.unauthorized.password)
   @ApiForbiddenResponse(api.forbidden.mail)
@@ -89,7 +91,7 @@ export class UserController {
     @Body() dto: SigninUserDto,
     @Res() res: Response,
   ): Promise<object> {
-    const user = await this.publicService.findUser(dto.e_mail);
+    const user = await this.publicService.findUserByEmail(dto.e_mail);
     if (!user.isAuthorized)
       throw new ForbiddenException('You must authenticate mail');
     else if (!this.publicService.isSamePassword(dto.password, user.password))
@@ -121,11 +123,12 @@ export class UserController {
   @Patch('/info')
   @ApiOperation({
     summary:
-      '유저의 정보 수정 - [패스워드를 바꿀 경우에는 인증 API의 패스워드 일치 확인을 해야합니다]',
+      '유저의 정보 수정 - [패스워드를 바꿀 경우, 인증 API의 패스워드 일치 확인을 해야합니다]',
     description: `유저의 정보를 수정하는 API입니다.`,
   })
   @ApiCookieAuth()
-  @ApiOkResponse(api.success.user)
+  @ApiOkResponse(api.success.basicUser)
+  @ApiResponse(api.success.kakaoUser)
   @ApiBadRequestResponse(api.badRequest)
   @ApiUnauthorizedResponse(api.unauthorized.token)
   @ApiForbiddenResponse(api.forbidden.mail)
@@ -136,14 +139,14 @@ export class UserController {
     @Res() res: Response,
     @Body() dto: UpdateUserDto,
   ): Promise<object> {
-    const { e_mail }: any = req.user;
-    const user = await this.userService.updateUser(e_mail, dto);
+    const { _id }: any = req.user;
+    const user = await this.userService.updateUser(_id, dto);
     const userInfo = this.publicService.translateToResUserInfo(user);
     const accessToken = this.authService.generateAccessToken(userInfo);
     const { refreshToken, refreshSecret } =
       this.authService.generateRefreshTokenAndSecret(userInfo);
 
-    this.authService.updateRefreshToken(e_mail, refreshToken, refreshSecret);
+    this.authService.updateRefreshToken(_id, refreshToken, refreshSecret);
     this.authService.removeAccessToken(res);
     this.authService.sendAccessToken(res, accessToken);
     return res.send({ message: 'success', data: userInfo });
@@ -162,16 +165,16 @@ export class UserController {
   @ApiNotFoundResponse(api.notFound.user)
   @UseGuards(VerifyMailGuard)
   async deleteUser(@Req() req: Request, @Res() res: Response): Promise<object> {
-    const { e_mail }: any = req.user;
-    await this.publicService.findUser(e_mail);
+    const { _id }: any = req.user;
+    await this.publicService.findUserBy_id(_id);
 
     await Promise.all([
-      this.userService.deleteUser(e_mail),
-      this.userService.deleteUserDetail(e_mail).catch(() => {
+      this.userService.deleteUser(_id),
+      this.userService.deleteUserDetail(_id).catch(() => {
         return;
       }),
-      this.authService.deleteCertificate(e_mail),
-      this.dailyService.deleteDaily(e_mail),
+      this.authService.deleteCertificate(_id),
+      this.dailyService.deleteDailys(_id),
     ]);
     this.authService.removeAccessToken(res);
 
@@ -190,8 +193,8 @@ export class UserController {
   @ApiNotFoundResponse(api.notFound.detail)
   @UseGuards(VerifyMailGuard)
   async findOneUserDetail(@Req() req: Request): Promise<object> {
-    const { e_mail }: any = req.user;
-    const userDetail = await this.userService.findUserDetail(e_mail);
+    const { _id }: any = req.user;
+    const userDetail = await this.userService.findUserDetail(_id);
     return { message: 'success', data: userDetail };
   }
 
@@ -211,8 +214,8 @@ export class UserController {
     @Req() req: Request,
     @Body() dto: CreateUserDetailDto,
   ): Promise<object> {
-    const { e_mail }: any = req.user;
-    await this.userService.createUserDetail(e_mail, dto);
+    const { _id }: any = req.user;
+    await this.userService.createUserDetail(_id, dto);
     return { message: 'success', data: null };
   }
 
@@ -232,8 +235,8 @@ export class UserController {
     @Req() req: Request,
     @Body() dto: UpdateUserDetailDto,
   ): Promise<object> {
-    const { e_mail }: any = req.user;
-    await this.userService.updateUserDetail(e_mail, dto);
+    const { _id }: any = req.user;
+    await this.userService.updateUserDetail(_id, dto);
     return { message: 'success', data: null };
   }
 
@@ -246,11 +249,12 @@ export class UserController {
   @ApiOkResponse(api.success.nulldata)
   @ApiNotFoundResponse(api.notFound.user)
   async findPassword(@Param('e_mail') e_mail: string): Promise<object> {
-    await this.publicService.findUser(e_mail);
+    const user = await this.publicService.findUserByEmail(e_mail);
     const authMailToken = this.mailService.generateAuthMailToken();
 
-    await this.authService.updateAuthMailToken(e_mail, authMailToken);
+    await this.authService.updateAuthMailToken(user._id, authMailToken);
     await this.mailService.sendAuthMailTokenForFindPassword(
+      user._id,
       e_mail,
       authMailToken,
     );
@@ -260,23 +264,17 @@ export class UserController {
 
   @Get('/:e_mail')
   @ApiOperation({
-    summary: '특정한 유저의 정보 조회 - [중복이메일 유효성 검사]로도 사용 가능',
-    description: `특정한 유저의 정보를 가져오는 API입니다.`,
+    summary: '중복이메일 유효성 검사',
+    description: `해당 이메일을 가진 유저의 정보를 가져오는 API입니다.`,
   })
   @ApiParam({ name: 'e_mail', description: '이메일', required: true })
-  @ApiOkResponse(api.success.user)
+  @ApiOkResponse(api.success.basicUser)
+  @ApiResponse(api.success.kakaoUser)
   @ApiNotFoundResponse(api.notFound.user)
   async validateEmail(@Param('e_mail') e_mail: string): Promise<object> {
-    const user = await this.publicService.findUser(e_mail);
+    const user = await this.publicService.findUserByEmail(e_mail);
     const userInfo = this.publicService.translateToResUserInfo(user);
 
     return { message: 'success', data: userInfo };
   }
-
-  // smm bfm pbf
-  // 주간 통계 데이터
-
-  // 주간 운동 데이터
-
-  // 월 운동 데이터
 }

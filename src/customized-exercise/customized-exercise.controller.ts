@@ -50,10 +50,10 @@ export class CustomizedExerciseController {
   @ApiNotFoundResponse(api.notFound.exercise)
   @UseGuards(VerifyMailGuard)
   async findExercise(@Req() req: Request): Promise<object> {
-    const { e_mail }: any = req.user;
+    const { _id }: any = req.user;
 
     const exerciseList: Exercise | Exercise[] =
-      await this.customizedExerciseService.findOneOrAllExercise(e_mail, null);
+      await this.customizedExerciseService.findOneOrAllExercise(_id, null);
 
     return { message: 'success', data: exerciseList };
   }
@@ -74,15 +74,15 @@ export class CustomizedExerciseController {
     @Req() req: Request,
     @Body() dto: CreateExerciseDto,
   ): Promise<object> {
-    const { e_mail }: any = req.user;
+    const { _id }: any = req.user;
 
     try {
       await this.customizedExerciseService.findOneOrAllExercise(
-        e_mail,
+        _id,
         dto.exercise_name,
       );
     } catch {
-      await this.customizedExerciseService.createExercise(e_mail, dto);
+      await this.customizedExerciseService.createExercise(_id, dto);
       return { message: 'success', data: null };
     }
     throw new ConflictException(`Existing exercise:${dto.exercise_name}`);
@@ -110,10 +110,10 @@ export class CustomizedExerciseController {
     @Param('exercise_name') exercise_name: string,
     @Body() dto: UpdateExerciseDto,
   ): Promise<object> {
-    const { e_mail }: any = req.user;
+    const { _id }: any = req.user;
 
     await this.customizedExerciseService.updateOneExercise(
-      e_mail,
+      _id,
       exercise_name,
       dto,
     );
@@ -131,9 +131,9 @@ export class CustomizedExerciseController {
   @ApiForbiddenResponse(api.forbidden.mail)
   @UseGuards(VerifyMailGuard)
   async deleteAllExercise(@Req() req: Request): Promise<object> {
-    const { e_mail }: any = req.user;
+    const { _id }: any = req.user;
 
-    await this.customizedExerciseService.deleteAllExercise(e_mail);
+    await this.customizedExerciseService.deleteAllExercise(_id);
     return { message: 'success', data: null };
   }
 
@@ -157,12 +157,9 @@ export class CustomizedExerciseController {
     @Req() req: Request,
     @Param('exercise_name') exercise_name: string,
   ): Promise<object> {
-    const { e_mail }: any = req.user;
+    const { _id }: any = req.user;
 
-    await this.customizedExerciseService.deleteOneExercise(
-      e_mail,
-      exercise_name,
-    );
+    await this.customizedExerciseService.deleteOneExercise(_id, exercise_name);
     return { message: 'success', data: null };
   }
 }

@@ -3,13 +3,12 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class VerifyAuthMailTokenDto {
   @ApiProperty({
-    required: true,
-    example: 'example@naver.com',
-    description: '이메일',
+    description: 'uuid',
+    example: '929aa1a4-8f76-4e28-9a0b-3888ded962b5',
   })
   @IsNotEmpty()
   @IsString()
-  readonly e_mail: string;
+  readonly _id: string;
 
   @ApiProperty({
     required: true,

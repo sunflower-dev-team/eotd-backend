@@ -14,7 +14,7 @@ export class CreateDailyDietDto {
   })
   @IsOptional()
   @IsString()
-  readonly details: string;
+  readonly detail: string;
 
   @ApiProperty({ description: '식사 시간', example: '08:20', required: false })
   @IsOptional()
@@ -28,8 +28,8 @@ export class CreateDailyDietDto {
     required: false,
   })
   @IsOptional()
-  @IsString()
-  readonly meal_img: string;
+  @IsString({ each: true })
+  readonly imgs: string[];
 
   @ApiProperty({ description: '식단 평점', example: 3 })
   @IsNotEmpty()

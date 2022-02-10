@@ -16,12 +16,13 @@ export class MailService {
   }
 
   async sendAuthMailTokenForSignup(
+    _id: string,
     e_mail: string,
     authMailToken: string,
   ): Promise<void> {
     const ROOT_URL = this.config.get('ROOT_URL');
     const PORT = this.config.get('PORT');
-    const url = `${ROOT_URL}:${PORT}/auth/mail-signup?e_mail=${e_mail}&authMailToken=${authMailToken}`;
+    const url = `${ROOT_URL}:${PORT}/auth/mail-signup?_id=${_id}&authMailToken=${authMailToken}`;
 
     await this.mailerService
       .sendMail({
@@ -39,12 +40,13 @@ export class MailService {
   }
 
   async sendAuthMailTokenForFindPassword(
+    _id: string,
     e_mail: string,
     authMailToken: string,
   ): Promise<void> {
     const ROOT_URL = this.config.get('ROOT_URL');
     const PORT = this.config.get('PORT');
-    const url = `${ROOT_URL}:${PORT}/auth/mail-password?e_mail=${e_mail}&authMailToken=${authMailToken}`;
+    const url = `${ROOT_URL}:${PORT}/auth/mail-password?_id=${_id}&authMailToken=${authMailToken}`;
 
     await this.mailerService
       .sendMail({

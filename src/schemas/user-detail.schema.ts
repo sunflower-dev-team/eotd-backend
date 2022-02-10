@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 
 export type UserDetailDocument = UserDetail & Document;
@@ -7,11 +7,11 @@ export type UserDetailDocument = UserDetail & Document;
 @Schema({ collection: 'user_detail', versionKey: false })
 export class UserDetail {
   @ApiProperty({
-    description: '이메일',
-    example: 'example.naver.com',
+    description: 'uuid',
+    example: '929aa1a4-8f76-4e28-9a0b-3888ded962b5',
   })
-  @Prop({ unique: true, required: true })
-  e_mail: string;
+  @Prop({ type: Types.ObjectId })
+  _id: string;
 
   @ApiProperty({
     description: '닉네임',

@@ -1,40 +1,34 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
+
+export class ExerciseSetInfo {
+  @ApiProperty({
+    description: '한 세트 횟수',
+    example: 10,
+  })
+  readonly count: number;
+
+  @ApiProperty({
+    description: '한 세트 중량',
+    example: 70,
+  })
+  readonly kg: number;
+}
 
 export class CreateDailyExerciseDto {
   @ApiProperty({
     description: '운동 이름',
-    example: '벤치프레스',
+    example: '플렛 벤치 프레스',
   })
   @IsNotEmpty()
   @IsString()
-  readonly exercise_name: string;
+  readonly name: string;
 
-  @ApiProperty({
-    description: '운동 인증 사진',
-    example:
-      'https://media.vlpt.us/images/peter0618/post/51a9e282-ae0a-46ef-85bd-8ab0a36747fc/Nestjs.png',
-    required: false,
-  })
+  @ApiProperty({ type: [ExerciseSetInfo] })
   @IsOptional()
-  @IsString()
-  readonly exercise_img: string;
-
-  @ApiProperty({
-    description: '운동 시작 시간',
-    example: '08:00',
-    required: false,
-  })
-  @IsNotEmpty()
-  @IsString()
-  readonly startAt: string;
-
-  @ApiProperty({
-    description: '운동 종료 시간',
-    example: '08:15',
-    required: false,
-  })
-  @IsNotEmpty()
-  @IsString()
-  readonly endAt: string;
+  @IsObject({ each: true })
+  readonly set: {
+    readonly count: number;
+    readonly kg: number;
+  };
 }
