@@ -14,7 +14,10 @@ import { OauthModule } from './oauth/oauth.module';
 @Module({
   imports: [
     CommandModule,
-    ConfigModule.forRoot({ envFilePath: '.env.development', isGlobal: true }),
+    ConfigModule.forRoot({
+      envFilePath: ['.env.prod', '.env.dev'],
+      isGlobal: true,
+    }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (config: ConfigService) => ({
