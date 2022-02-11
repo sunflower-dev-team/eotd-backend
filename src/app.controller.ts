@@ -31,7 +31,6 @@ export class AppController {
   }
 
   @Get('/prod')
-  @UseGuards(AuthGuard('jwt-access'))
   checkProd() {
     return 'success production';
   }
