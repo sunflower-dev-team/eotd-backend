@@ -1,7 +1,7 @@
 #!/bin/bash
 cd /home/ubuntu/eotd-backend
 sudo apt update
-sudo apt install nodejs npm
+sudo apt install nodejs npm -Y
 nvm install v14.18.0
 nvm use v14.18.0
 npm install
