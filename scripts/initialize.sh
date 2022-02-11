@@ -9,7 +9,7 @@ sudo apt install npm -y
 nvm install v14.18.0
 nvm use v14.18.0
 npm install
-sudo npm install pm2@latest -g
+npm install pm2@latest -g
 sudo apt-get update
 sudo apt-get install authbind
 sudo touch /etc/authbind/byport/80
