@@ -29,4 +29,10 @@ export class AppController {
   getCookieData(@Req() req: Request) {
     return req.user;
   }
+
+  @Get('/prod')
+  @UseGuards(AuthGuard('jwt-access'))
+  checkProd() {
+    return 'success production';
+  }
 }
