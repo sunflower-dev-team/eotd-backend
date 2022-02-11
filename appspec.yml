@@ -7,10 +7,13 @@ files:
 hooks:
   ApplicationStop:
     - location: scripts/stop.sh
+      tiemout: 60
       runas: root
   AfterInstall:
     - location: scripts/initialize.sh
+      tiemout: 60
       runas: root
   ApplicationStart:
     - location: scripts/start.sh
+      tiemout: 60
       runas: root
