@@ -24,14 +24,14 @@ export class AppController {
     return 'failed';
   }
 
+  @Get('/prod')
+  checkProd() {
+    return 'success production';
+  }
+
   @Get('/cookie')
   @UseGuards(AuthGuard('jwt-access'))
   getCookieData(@Req() req: Request) {
     return req.user;
-  }
-
-  @Get('/prod')
-  checkProd() {
-    return 'success production';
   }
 }
