@@ -1,8 +1,8 @@
 #!/bin/bash
 cd /home/ubuntu/eotd-backend
-sudo npm install
-sudo npm install pm2@latest -g
-sudo npm install @nestjs/cli -g 
+npm install
+npm install pm2@latest -g
+npm install @nestjs/cli -g 
 sudo apt-get update
 sudo apt-get install authbind
 sudo touch /etc/authbind/byport/80
