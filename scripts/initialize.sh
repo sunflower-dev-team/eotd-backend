@@ -15,5 +15,5 @@ sudo apt-get install authbind
 sudo touch /etc/authbind/byport/80
 sudo chown ubuntu /etc/authbind/byport/80
 sudo chmod 755 /etc/authbind/byport/80
-sudo npm install @nestjs/cli -g 
-sudo npm run build
+npm install @nestjs/cli -g 
+npm run build
