@@ -26,7 +26,7 @@ export class AppController {
 
   @Get('/prod')
   checkProd() {
-    return '배포 자동화 테스트';
+    return '배포 자동화 성공';
   }
 
   @Get('/cookie')
