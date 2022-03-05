@@ -17,7 +17,7 @@ export class User {
     description: '이메일',
     example: 'example.naver.com',
   })
-  @Prop({ unique: true })
+  @Prop()
   e_mail: string;
 
   @ApiProperty({
@@ -25,7 +25,7 @@ export class User {
       'kakao 유저 id, 회원가입을 카카오 소셜 로그인으로 진행했는지 확인할 수 있는 속성입니다.',
     example: 51843215,
   })
-  @Prop({ unique: true })
+  @Prop()
   kakao_id: number;
 
   @ApiProperty({ description: '이름', example: '홍길동' })

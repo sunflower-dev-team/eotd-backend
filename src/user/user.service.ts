@@ -27,10 +27,11 @@ export class UserService {
   async createUser(userInfo: CreateUserDto): Promise<User> {
     const salt: string = bcrypt.genSaltSync();
     const password: string = bcrypt.hashSync(userInfo.password, salt);
+    const _id: string = uuid.v4();
 
     const user: User = await this.userModel
       .create({
-        _id: uuid.v4(),
+        _id,
         ...userInfo,
         password,
       })
