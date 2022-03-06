@@ -24,7 +24,7 @@ export class DailyService {
 
   // Daily - C,R,D
   async createDaily(_id: string): Promise<void> {
-    await this.dailysModel.create({ _id, dailys: [] }).catch(() => {
+    await this.dailysModel.create({ _id }).catch(() => {
       throw new InternalServerErrorException(
         'Daily-document has not been created',
       );

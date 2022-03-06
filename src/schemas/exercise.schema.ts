@@ -10,7 +10,7 @@ export class Exercise {
     description: '운동 이름',
     example: '벤치프레스',
   })
-  @Prop({ unique: true, required: true })
+  @Prop({ index: true, required: true })
   exercise_name: string;
 
   @ApiProperty({

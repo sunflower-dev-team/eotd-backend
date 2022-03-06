@@ -8,7 +8,7 @@ import { ApiProperty } from '@nestjs/swagger';
 @Schema({ versionKey: false, _id: false })
 export class Daily {
   @ApiProperty({ description: '날짜', example: 20220113 })
-  @Prop({ unique: true, required: true })
+  @Prop({ required: true })
   date: number;
 
   @ApiProperty({ type: DailyDiet })
@@ -33,7 +33,7 @@ export class Dailys {
   _id: string;
 
   @ApiProperty({ type: [Daily] })
-  @Prop({ type: [DailySchema], required: true })
+  @Prop({ type: [DailySchema], required: true, default: [] })
   dailys: Daily[];
 }
 export const DailysSchema = SchemaFactory.createForClass(Dailys);

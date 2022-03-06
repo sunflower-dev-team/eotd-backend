@@ -9,7 +9,7 @@ export class CustomizedExercise {
   @Prop({ type: Types.ObjectId })
   _id: string;
 
-  @Prop({ type: [ExerciseSchema], required: true })
+  @Prop({ type: [ExerciseSchema], required: true, default: [] })
   exercise_list: Exercise[];
 }
 
