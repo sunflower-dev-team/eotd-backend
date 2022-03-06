@@ -155,10 +155,11 @@ export class AuthService {
   sendAccessToken(res: Response, token: string): void {
     res.cookie('accessToken', token, {
       httpOnly: true,
+      domain: '*',
       // domain: 'localhost',
       // sameSite: 'none',
       // secure: true,
-      // maxAge: 1000 * 60 * 60,
+      maxAge: 1000 * 60 * 60,
     });
     return;
   }
