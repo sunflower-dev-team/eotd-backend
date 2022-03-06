@@ -11,11 +11,11 @@ export class Daily {
   @Prop({ required: true })
   date: number;
 
-  @ApiProperty({ type: DailyDiet })
+  @ApiProperty({ type: [DailyDiet] })
   @Prop({ type: [DailyDietSchema], required: true })
   daily_diet: DailyDiet[];
 
-  @ApiProperty({ type: DailyRoutine })
+  @ApiProperty({ type: [DailyRoutine] })
   @Prop({ type: [DailyRoutineSchema], required: true })
   daily_routine: DailyRoutine[];
 }
